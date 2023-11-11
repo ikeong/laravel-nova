@@ -62,7 +62,6 @@
           :resource-name="resourceName"
           :soft-deletes="softDeletes"
           :via-resource="viaResource"
-          :via-has-one="viaHasOne"
           :trashed="trashed"
           :per-page="perPage"
           :per-page-options="filterPerPageOptions"
@@ -184,7 +183,6 @@ export default {
     'trashedChanged',
     'trashedParameter',
     'updatePerPageChanged',
-    'viaHasOne',
     'viaManyToMany',
     'viaResource',
   ],

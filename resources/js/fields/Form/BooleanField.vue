@@ -24,16 +24,19 @@ import { DependentFormField, HandlesValidationErrors } from '@/mixins'
 export default {
   mixins: [HandlesValidationErrors, DependentFormField],
 
-  data: () => ({
-    value: false,
-  }),
-
   methods: {
     /*
      * Set the initial value for the field
      */
     setInitialValue() {
       this.value = this.currentField.value ?? this.value
+    },
+
+    /**
+     * Return the field default value.
+     */
+    fieldDefaultValue() {
+      return false
     },
 
     /**

@@ -61,7 +61,21 @@ class ActionEvent extends Model
      */
     public function target()
     {
-        return $this->morphTo('target', 'target_type', 'target_id')->withTrashed();
+        $queryWithTrashed = function ($query) {
+            return $query->withTrashed();
+        };
+
+        return $this->morphTo('target', 'target_type', 'target_id')
+                    ->constrain(
+                        collect(Nova::$resources)
+                            ->filter(function ($resource) {
+                                return $resource::softDeletes();
+                            })->mapWithKeys(function ($resource) use ($queryWithTrashed) {
+                                return [$resource::$model => $queryWithTrashed];
+                            })->all()
+                    )->when(true, function ($query) use ($queryWithTrashed) {
+                        return $query->hasMacro('withTrashed') ? $queryWithTrashed($query) : $query;
+                    });
     }
 
     /**

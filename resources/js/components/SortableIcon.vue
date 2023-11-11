@@ -32,12 +32,12 @@
 </template>
 
 <script>
-import { RouteParameters } from '@/mixins'
+import { InteractsWithQueryString } from '@/mixins'
 
 export default {
   emits: ['sort', 'reset'],
 
-  mixins: [RouteParameters],
+  mixins: [InteractsWithQueryString],
 
   props: {
     resourceName: String,
@@ -120,7 +120,7 @@ export default {
      * The current order query parameter value
      */
     sortColumn() {
-      return this.route.params[this.sortKey]
+      return this.queryStringParams[this.sortKey]
     },
 
     /**
@@ -134,7 +134,7 @@ export default {
      * The current direction query parameter value
      */
     direction() {
-      return this.route.params[this.directionKey]
+      return this.queryStringParams[this.directionKey]
     },
 
     /**

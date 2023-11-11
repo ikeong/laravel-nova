@@ -26,7 +26,7 @@
 
       <div class="flex flex-1 px-4 sm:px-8 lg:px-12">
         <GlobalSearch
-          class="relative z-50"
+          class="relative"
           v-if="globalSearchEnabled"
           dusk="global-search-component"
         />

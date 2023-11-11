@@ -87,6 +87,18 @@ class Page extends Dusk
     }
 
     /**
+     * Set luxon timezone for the frontend.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  string  $timezone
+     * @return void
+     */
+    public function luxonTimezone(Browser $browser, string $timezone = 'system')
+    {
+        $browser->script('Nova.$testing.timezone("'.$timezone.'")');
+    }
+
+    /**
      * Get the global element shortcuts for the site.
      *
      * @return array

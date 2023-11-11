@@ -12,13 +12,14 @@ interface Preset
      * Save the field value to permanent storage.
      *
      * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  string  $requestAttribute
      * @param  \Illuminate\Database\Eloquent\Model  $model
      * @param  string  $attribute
      * @param  \Laravel\Nova\Fields\Repeater\RepeatableCollection  $repeatables
      * @param  string|null  $uniqueField
      * @return \Closure|void
      */
-    public function set(NovaRequest $request, Model $model, string $attribute, RepeatableCollection $repeatables, mixed $uniqueField);
+    public function set(NovaRequest $request, string $requestAttribute, Model $model, string $attribute, RepeatableCollection $repeatables, $uniqueField);
 
     /**
      * Retrieve the value from storage and hydrate the field's value.

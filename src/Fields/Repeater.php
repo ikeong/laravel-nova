@@ -2,6 +2,7 @@
 
 namespace Laravel\Nova\Fields;
 
+use Laravel\Nova\Exceptions\NovaException;
 use Laravel\Nova\Fields\Repeater\Presets\HasMany;
 use Laravel\Nova\Fields\Repeater\Presets\JSON;
 use Laravel\Nova\Fields\Repeater\Presets\Preset;
@@ -16,18 +17,17 @@ class Repeater extends Field
 {
     /**
      * The resource class for the repeater.
+     *
+     * @var class-string<\Laravel\Nova\Resource>|null
      */
-    public string $resourceClass;
+    public $resourceClass;
 
     /**
      * The resource name for the repeater.
+     *
+     * @var string|null
      */
-    public string $resourceName;
-
-    /**
-     * @var string The relationship for the repeater.
-     */
-    public string $relationship;
+    public $resourceName;
 
     /**
      * The field's component.
@@ -69,37 +69,30 @@ class Repeater extends Field
 
     /**
      * The preset used for the field.
+     *
+     * @var \Laravel\Nova\Fields\Repeater\Presets\Preset|null
      */
-    public Preset $preset;
+    public $preset;
 
     /**
      * Create a new field.
      *
      * @param  string  $name
      * @param  string|null  $attribute
-     * @param  class-string<\Laravel\Nova\Resource>|null  $resource
      * @param  (callable(mixed, mixed, ?string):mixed)|null  $resolveCallback
      */
-    public function __construct($name, $attribute = null, $resource = null, callable $resolveCallback = null)
+    public function __construct($name, $attribute = null, callable $resolveCallback = null)
     {
         parent::__construct($name, $attribute, $resolveCallback);
 
         $this->onlyOnForms();
         $this->repeatables = RepeatableCollection::make();
-
-        $resource = $resource ?? ResourceRelationshipGuesser::guessResource($name);
-
-        if ($resource) {
-            $this->resourceClass = $resource;
-            $this->resourceName = $resource::uriKey();
-            $this->relationship = $this->attribute = $attribute ?? ResourceRelationshipGuesser::guessRelation($name);
-        }
     }
 
     /**
      * Specify the callback to be executed to retrieve the pivot fields.
      *
-     * @param  array<int, string>  $repeatables
+     * @param  array<int, \Laravel\Nova\Fields\Repeater\Repeatable>  $repeatables
      * @return $this
      */
     public function repeatables(array $repeatables)
@@ -136,11 +129,24 @@ class Repeater extends Field
     /**
      * Use the HasMany preset for the field.
      *
+     * @param  class-string<\Laravel\Nova\Resource>|null  $resourceClass
      * @return $this
+     *
+     * @throws \Laravel\Nova\Exceptions\NovaException
      */
-    public function asHasMany()
+    public function asHasMany($resourceClass = null)
     {
-        return $this->preset(new HasMany);
+        /** @var class-string<\Laravel\Nova\Resource>|null $resource */
+        $resource = $resourceClass ?? ResourceRelationshipGuesser::guessResource($this->name);
+
+        if ($resource) {
+            $this->resourceClass = $resource;
+            $this->resourceName = $resource::uriKey();
+
+            return $this->preset(new HasMany);
+        }
+
+        throw NovaException::missingResourceForRepeater($this->name);
     }
 
     /**
@@ -188,7 +194,7 @@ class Repeater extends Field
      */
     protected function fillAttributeFromRequest(NovaRequest $request, $requestAttribute, $model, $attribute)
     {
-        return $this->getPreset()->set($request, $model, $attribute, $this->repeatables, $this->uniqueField);
+        return $this->getPreset()->set($request, $requestAttribute, $model, $attribute, $this->repeatables, $this->uniqueField);
     }
 
     /**
@@ -264,7 +270,7 @@ class Repeater extends Field
     public function jsonSerialize(): array
     {
         return array_merge([
-            'blocks' => $this->repeatables,
+            'repeatables' => $this->repeatables,
             'sortable' => $this->sortable,
         ], parent::jsonSerialize());
     }

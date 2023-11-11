@@ -8,6 +8,7 @@
       <div class="flex items-center space-x-2">
         <IconButton
           v-if="sortable"
+          dusk="row-move-up-button"
           @click="$emit('move-up', index)"
           iconType="arrow-up"
           solid
@@ -15,6 +16,7 @@
         />
         <IconButton
           v-if="sortable"
+          dusk="row-move-down-button"
           @click="$emit('move-down', index)"
           iconType="arrow-down"
           solid
@@ -23,6 +25,7 @@
       </div>
 
       <IconButton
+        dusk="row-delete-button"
         @click.stop.prevent="beforeRemove"
         class="ml-auto"
         iconType="trash"
@@ -39,7 +42,7 @@
           :ref="fieldRefs[`fields.${field.attribute}`]"
           :is="'form-' + field.component"
           :field="field"
-          :index="index"
+          :index="fieldIndex"
           :errors="errors"
           :show-help-text="true"
           @file-deleted="$emit('file-deleted')"
@@ -63,7 +66,10 @@
 import { ref, provide, computed, inject } from 'vue'
 import fromPairs from 'lodash/fromPairs'
 import first from 'lodash/first'
+import { useLocalization } from '@/composables/useLocalization'
+
 const emit = defineEmits(['click', 'move-up', 'move-down', 'file-deleted'])
+const { __ } = useLocalization()
 
 const props = defineProps({
   field: { type: Object, required: true },
@@ -95,14 +101,16 @@ const viaRelationship = inject('viaRelationship')
 
 const beforeRemove = () =>
   props.item.confirmBeforeRemoval
-    ? confirm('Are you sure you want to remove this block?')
+    ? confirm(__('Are you sure you want to remove this item?'))
       ? remove()
       : null
     : remove()
 
-const remove = () =>
+const remove = () => {
   Object.keys(fieldRefs).forEach(async k => {
     // await fieldRefs[k]?.value[0]?.beforeRemove?()
-    emit('click', props.index)
   })
+
+  emit('click', props.index)
+}
 </script>

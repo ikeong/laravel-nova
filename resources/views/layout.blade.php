@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width"/>
     <meta name="locale" content="{{ $locale }}"/>
+    <meta name="robots" content="noindex">
 
     @include('nova::partials.meta')
 
@@ -29,13 +30,6 @@
 </head>
 <body class="min-w-site text-sm font-medium min-h-full text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900">
     @inertia
-    <div class="relative z-50">
-      <div id="notifications" name="notifications"></div>
-    </div>
-    <div>
-      <div id="dropdowns" name="dropdowns"></div>
-      <div id="modals" name="modals"></div>
-    </div>
 
     <!-- Scripts -->
     <script src="{{ mix('manifest.js', 'vendor/nova') }}"></script>

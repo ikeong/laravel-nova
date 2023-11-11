@@ -1,7 +1,7 @@
 <template>
   <tr
-    :data-pivot-id="resource['id'].pivotValue"
-    :dusk="resource['id'].value + '-row'"
+    :data-pivot-id="resource.id.pivotValue"
+    :dusk="`${resource.id.value}-row`"
     class="group"
     :class="{
       'divide-x divide-gray-100 dark:divide-gray-700': shouldShowColumnBorders,
@@ -23,7 +23,7 @@
         :aria-label="__('Select Resource :title', { title: resource.title })"
         :checked="checked"
         :data-testid="`${testId}-checkbox`"
-        :dusk="`${resource['id'].value}-checkbox`"
+        :dusk="`${resource.id.value}-checkbox`"
         @input="toggleSelection"
       />
     </td>
@@ -33,8 +33,8 @@
       v-for="(field, index) in resource.fields"
       :key="field.uniqueKey"
       :class="{
-        'px-6': index == 0 && !shouldShowCheckboxes,
-        'px-2': index != 0 || shouldShowCheckboxes,
+        'px-6': index === 0 && !shouldShowCheckboxes,
+        'px-2': index !== 0 || shouldShowCheckboxes,
         'py-2': !shouldShowTight,
         'whitespace-nowrap': !field.wrapping,
         'cursor-pointer': clickableRow,

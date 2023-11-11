@@ -34,12 +34,8 @@
     <template v-if="!shouldBeCollapsed">
       <div class="flex mb-6">
         <IndexSearchInput
-          v-if="
-            resourceInformation && resourceInformation.searchable && !viaHasOne
-          "
-          :searchable="
-            resourceInformation && resourceInformation.searchable && !viaHasOne
-          "
+          v-if="resourceInformation && resourceInformation.searchable"
+          :searchable="resourceInformation && resourceInformation.searchable"
           v-model:keyword="search"
           @update:keyword="search = $event"
         />
@@ -75,7 +71,7 @@
             :via-resource-id="viaResourceId"
             :via-relationship="viaRelationship"
             :relationship-type="relationshipType"
-            :authorized-to-create="authorizedToCreate && !resourceIsFull"
+            :authorized-to-create="authorizedToCreate"
             :authorized-to-relate="authorizedToRelate"
             class="flex-shrink-0"
           />
@@ -114,6 +110,7 @@
           :has-filters="hasFilters"
           :have-standalone-actions="haveStandaloneActions"
           :lenses="lenses"
+          :loading="resourceResponse && loading"
           :per-page-options="perPageOptions"
           :per-page="perPage"
           :pivot-actions="pivotActions"
@@ -142,12 +139,14 @@
           :trashed-parameter="trashedParameter"
           :trashed="trashed"
           :update-per-page-changed="updatePerPageChanged"
-          :via-has-one="viaHasOne"
           :via-many-to-many="viaManyToMany"
           :via-resource="viaResource"
         />
 
-        <LoadingView :loading="loading">
+        <LoadingView
+          :loading="loading"
+          :variant="!resourceResponse ? 'default' : 'overlay'"
+        >
           <IndexErrorDialog
             v-if="resourceResponseError != null"
             :resource="resourceInformation"
@@ -156,7 +155,7 @@
 
           <template v-else>
             <IndexEmptyDialog
-              v-if="!resources.length"
+              v-if="!loading && !resources.length"
               :create-button-label="createButtonLabel"
               :singular-name="singularName"
               :resource-name="resourceName"

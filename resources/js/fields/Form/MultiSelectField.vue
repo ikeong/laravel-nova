@@ -41,7 +41,6 @@ export default {
   mixins: [HandlesValidationErrors, DependentFormField],
 
   data: () => ({
-    value: [],
     search: '',
   }),
 
@@ -64,6 +63,13 @@ export default {
       )
 
       this.value = map(selectedOptions, o => o.value)
+    },
+
+    /**
+     * Return the field default value.
+     */
+    fieldDefaultValue() {
+      return []
     },
 
     /**
@@ -113,7 +119,10 @@ export default {
 
       return options.filter(option => {
         return (
-          option.label.toLowerCase().indexOf(this.search.toLowerCase()) > -1
+          option.label
+            .toString()
+            .toLowerCase()
+            .indexOf(this.search.toLowerCase()) > -1
         )
       })
     },

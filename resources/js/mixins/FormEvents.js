@@ -46,6 +46,13 @@ export default {
 
   computed: {
     /**
+     * Return the field attribute.
+     */
+    fieldAttribute() {
+      return this.field.attribute
+    },
+
+    /**
      * Determine if the field has Form Unique ID.
      */
     hasFormUniqueId() {

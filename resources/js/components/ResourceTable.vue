@@ -126,15 +126,6 @@ export default {
     },
 
     /**
-     * Determine if the current resource listing is via a has-one relationship.
-     */
-    viaHasOne() {
-      return (
-        this.relationshipType == 'hasOne' || this.relationshipType == 'morphOne'
-      )
-    },
-
-    /**
      * Determine if the resource table should show column borders.
      */
     shouldShowColumnBorders() {

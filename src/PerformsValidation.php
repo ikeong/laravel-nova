@@ -34,28 +34,11 @@ trait PerformsValidation
      */
     public static function validatorForCreation(NovaRequest $request)
     {
-        return Validator::make(static::dataForCreation($request), static::rulesForCreation($request))
+        return Validator::make($request->all(), static::rulesForCreation($request))
                 ->after(function ($validator) use ($request) {
                     static::afterValidation($request, $validator);
                     static::afterCreationValidation($request, $validator);
                 });
-    }
-
-    /**
-     * Provide the data used to validate the resource creation request.
-     *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
-     * @return array
-     */
-    public static function dataForCreation(NovaRequest $request)
-    {
-        return array_merge($request->all(), self::newResource()->creationFields($request)
-            ->applyDependsOn($request)
-            ->withoutReadonly($request)
-            ->withoutUnfillable()
-            ->filter()
-            ->all()
-        );
     }
 
     /**
@@ -124,29 +107,11 @@ trait PerformsValidation
      */
     public static function validatorForUpdate(NovaRequest $request, $resource = null)
     {
-        return Validator::make(static::dataForUpdate($request, $resource), static::rulesForUpdate($request, $resource))
+        return Validator::make($request->all(), static::rulesForUpdate($request, $resource))
                 ->after(function ($validator) use ($request) {
                     static::afterValidation($request, $validator);
                     static::afterUpdateValidation($request, $validator);
                 });
-    }
-
-    /**
-     * Provide the data used to validate the resource update request.
-     *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
-     * @param  \Laravel\Nova\Resource  $resource
-     * @return array
-     */
-    public static function dataForUpdate(NovaRequest $request, $resource)
-    {
-        return array_merge($request->all(), $resource->updateFields($request)
-            ->applyDependsOn($request)
-            ->withoutReadonly($request)
-            ->withoutUnfillable()
-            ->filter()
-            ->all()
-        );
     }
 
     /**

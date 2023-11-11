@@ -69,7 +69,6 @@ export default {
   data: () => ({
     search: '',
     selectedOption: null,
-    value: null,
   }),
 
   created() {
@@ -86,6 +85,13 @@ export default {
   },
 
   methods: {
+    /**
+     * Return the field default value.
+     */
+    fieldDefaultValue() {
+      return null
+    },
+
     /**
      * Provide a function that fills a passed FormData object with the
      * field's internal value attribute. Here we are forcing there to be a
@@ -108,8 +114,8 @@ export default {
      * Clear the current selection for the field.
      */
     clearSelection() {
-      this.selectedOption = ''
-      this.value = ''
+      this.selectedOption = null
+      this.value = this.fieldDefaultValue()
 
       if (this.field) {
         this.emitFieldValueChange(this.fieldAttribute, this.value)
@@ -203,7 +209,10 @@ export default {
     filteredOptions() {
       return this.currentField.options.filter(option => {
         return (
-          option.label.toLowerCase().indexOf(this.search.toLowerCase()) > -1
+          option.label
+            .toString()
+            .toLowerCase()
+            .indexOf(this.search.toLowerCase()) > -1
         )
       })
     },

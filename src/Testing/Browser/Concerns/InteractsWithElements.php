@@ -11,7 +11,6 @@ trait InteractsWithElements
     /**
      * Dismiss toasted messages.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function dismissToasted(Browser $browser)
@@ -22,7 +21,6 @@ trait InteractsWithElements
     /**
      * Close current dropdown.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function closeCurrentDropdown(Browser $browser)
@@ -39,35 +37,62 @@ trait InteractsWithElements
     /**
      * Type on "date" input.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
-     * @param  string  $selector
-     * @param  \Carbon\CarbonInterface  $carbon
+     * @param  \Carbon\CarbonInterface|empty-string|null  $carbon
      * @return void
      */
-    public function typeOnDate(Browser $browser, string $selector, CarbonInterface $carbon)
+    public function typeOnDate(Browser $browser, string $selector, $carbon)
     {
-        $browser->type($selector, $carbon->format(Env::get('DUSK_DATE_FORMAT', 'mdY')));
+        if ($carbon instanceof CarbonInterface) {
+            $date = $carbon->format(Env::get('DUSK_DATE_FORMAT', 'mdY'));
+
+            $this->typeWithTabs($browser, $selector, $date);
+        } else {
+            $browser->type($selector, '');
+        }
     }
 
     /**
      * Type on "datetime-local" input.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
-     * @param  string  $selector
-     * @param  \Carbon\CarbonInterface  $carbon
+     * @param  \Carbon\CarbonInterface|empty-string|null  $carbon
      * @return void
      */
-    public function typeOnDateTimeLocal(Browser $browser, string $selector, CarbonInterface $carbon)
+    public function typeOnDateTimeLocal(Browser $browser, string $selector, $carbon)
     {
-        $browser->type($selector, $carbon->format(Env::get('DUSK_DATE_FORMAT', 'mdY')));
-        $browser->keys($selector, ['{tab}']);
-        $browser->type($selector, $carbon->format(Env::get('DUSK_TIME_FORMAT', 'hisa')));
+        if ($carbon instanceof CarbonInterface) {
+            $date = $carbon->format(Env::get('DUSK_DATE_FORMAT', 'mdY'));
+            $time = $carbon->format(Env::get('DUSK_TIME_FORMAT', 'hisa'));
+
+            $this->typeWithTabs($browser, $selector, $date);
+            $browser->keys($selector, ['{tab}']);
+            $this->typeWithTabs($browser, $selector, $time);
+        } else {
+            $browser->type($selector, '');
+        }
+    }
+
+    /**
+     * Type input separated using "tab".
+     *
+     * @return void
+     */
+    protected function typeWithTabs(Browser $browser, string $selector, string $date, string $separator = '-')
+    {
+        $date = explode($separator, $date);
+
+        return array_map(function ($group) use ($date, $browser, $selector) {
+            $browser->type($selector, $group);
+
+            // if the item is not the last in the array, let's tab through
+            if ($group !== end($date)) {
+                $browser->keys($selector, ['{tab}']);
+            }
+        }, $date);
     }
 
     /**
      * Assert active modal is present.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function assertPresentModal(Browser $browser)
@@ -78,7 +103,6 @@ trait InteractsWithElements
     /**
      * Assert active modal is missing.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function assertMissingModal(Browser $browser)

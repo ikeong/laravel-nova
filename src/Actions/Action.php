@@ -34,6 +34,7 @@ use ReflectionClass;
  *
  * @method $this canSee(\Closure $callback)
  */
+#[\AllowDynamicProperties]
 class Action implements JsonSerializable
 {
     use AuthorizedToSee,
@@ -494,10 +495,7 @@ class Action implements JsonSerializable
         $this->standalone = false;
         $this->sole = true;
 
-        return $this->canSee(function (NovaRequest $request) {
-            return ! $request->allResourcesSelected() && $request->selectedResourceIds()->count() === 1;
-        })->showInline()
-        ->showOnDetail();
+        return $this->showInline()->showOnDetail();
     }
 
     /**

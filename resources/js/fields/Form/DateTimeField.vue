@@ -92,7 +92,7 @@ export default {
 
         this.value = isoDate.setZone(Nova.config('timezone')).toString()
       } else {
-        this.value = ''
+        this.value = this.fieldDefaultValue()
       }
 
       if (this.field) {

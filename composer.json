@@ -73,31 +73,43 @@
     "sort-packages": true
   },
   "scripts": {
+    "post-autoload-dump": [
+      "@clear",
+      "@php vendor/bin/dusk-updater detect --auto-update --ansi",
+      "@php vendor/bin/testbench-dusk package:discover --ansi"
+    ],
+    "clear": [
+      "@php vendor/bin/testbench-dusk package:purge-skeleton --ansi",
+      "@php vendor/bin/testbench-dusk package:dusk-purge --ansi"
+    ],
     "dusk:prepare": [
-      "./vendor/bin/dusk-updater detect --auto-update",
       "@php -r \"file_exists('phpunit.dusk.xml') || copy('phpunit.dusk.xml.dist', 'phpunit.dusk.xml'); \"",
-      "@php -r \"if (file_exists('.env.dusk')) { copy('.env.dusk', 'vendor/laravel/nova-dusk-suite/.env'); } else { copy('.env.dusk.example', 'vendor/laravel/nova-dusk-suite/.env'); }\"",
-      "./vendor/bin/testbench-dusk package:discover"
+      "@php -r \"if (file_exists('workbench/.env.dusk')) { copy('workbench/.env.dusk', 'vendor/laravel/nova-dusk-suite/.env'); } else { copy('workbench/.env.dusk.example', 'vendor/laravel/nova-dusk-suite/.env'); }\""
     ],
     "dusk:dev-assets": [
       "TAILWIND_MODE=build npm run dev",
-      "./vendor/bin/testbench-dusk nova:publish --force"
+      "@php vendor/bin/testbench-dusk nova:publish --force --ansi"
     ],
     "dusk:assets": [
       "TAILWIND_MODE=build npm run prod",
-      "./vendor/bin/testbench-dusk nova:publish --force"
+      "@php vendor/bin/testbench-dusk nova:publish --force --ansi"
     ],
     "dusk:test": [
-      "./vendor/bin/testbench-dusk package:dusk-purge",
-      "./vendor/bin/phpunit -c phpunit.dusk.xml"
-    ],
-    "test:local": [
-      "./vendor/bin/testbench-dusk package:dusk-purge",
-      "./vendor/bin/phpunit -c phpunit.xml --group date-field,datetime-field,external-network --testdox",
-      "./vendor/bin/phpunit -c phpunit.dusk.xml --group date-field,datetime-field,external-network --testdox"
+      "@php vendor/bin/testbench-dusk package:dusk-purge --ansi",
+      "@php vendor/bin/phpunit -c phpunit.dusk.xml"
     ],
     "dusk:filter": [
-      "./vendor/bin/testbench-dusk package:dusk-purge && ./vendor/bin/phpunit -c phpunit.dusk.xml --filter"
+      "@php vendor/bin/testbench-dusk package:dusk-purge --ansi && ./vendor/bin/phpunit -c phpunit.dusk.xml --filter"
+    ],
+    "test:local": [
+      "@php vendor/bin/phpunit -c phpunit.xml --group date-field,datetime-field,external-network --testdox",
+      "@php vendor/bin/phpunit -c phpunit.dusk.xml --group date-field,datetime-field,external-network --testdox"
+    ],
+    "serve": [
+      "@clear",
+      "@php vendor/bin/testbench package:discover --ansi",
+      "@php vendor/bin/testbench workbench:build --ansi",
+      "@php vendor/bin/testbench serve"
     ]
   },
   "suggest": {
@@ -111,5 +123,5 @@
   ],
   "minimum-stability": "dev",
   "prefer-stable": true,
-  "version": "4.26.3"
+  "version": "4.27.13"
 }

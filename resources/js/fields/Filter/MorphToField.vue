@@ -62,7 +62,12 @@ export default {
 
   methods: {
     setCurrentFilterValue() {
-      this.value = this.filter.currentValue
+      let selectedOption = find(
+        this.field.morphToTypes,
+        v => v.type == this.filter.currentValue
+      )
+
+      this.value = !isNil(selectedOption) ? selectedOption.value : ''
     },
 
     handleChange() {

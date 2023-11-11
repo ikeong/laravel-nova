@@ -361,6 +361,10 @@ export default {
       }
 
       this.initializeComponent()
+
+      if (isNil(this.syncedField.value) && isNil(this.selectedResourceId)) {
+        this.selectInitialResource()
+      }
     },
 
     emitOnSyncedFieldValueChange() {

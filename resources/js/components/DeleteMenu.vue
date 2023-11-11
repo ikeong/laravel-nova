@@ -82,7 +82,7 @@
 
 <script>
 import find from 'lodash/find'
-import { RouteParameters } from '@/mixins'
+import { InteractsWithQueryString } from '@/mixins'
 
 export default {
   emits: [
@@ -95,7 +95,7 @@ export default {
     'restoreSelected',
   ],
 
-  mixins: [RouteParameters],
+  mixins: [InteractsWithQueryString],
 
   props: [
     'allMatchingResourceCount',
@@ -220,7 +220,7 @@ export default {
 
   computed: {
     trashedOnlyMode() {
-      return this.route.params[this.trashedParameter] == 'only'
+      return this.queryStringParams[this.trashedParameter] == 'only'
     },
 
     hasDropDownMenuItems() {

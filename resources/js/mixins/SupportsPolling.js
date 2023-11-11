@@ -38,9 +38,12 @@ export default {
      */
     startPolling() {
       this.pollingListener = setInterval(() => {
+        let selectedResources = this.selectedResources ?? []
+
         if (
           document.hasFocus() &&
-          document.querySelectorAll('[data-modal-open]').length < 1
+          document.querySelectorAll('[data-modal-open]').length < 1 &&
+          selectedResources.length < 1
         ) {
           this.getResources()
         }

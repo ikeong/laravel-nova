@@ -13,6 +13,8 @@ use Laravel\Nova\Http\Requests\ActionRequest;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Nova;
 use Rap2hpoutre\FastExcel\FastExcel;
+use Symfony\Component\HttpFoundation\HeaderUtils;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportAsCsv extends Action
 {
@@ -126,7 +128,20 @@ class ExportAsCsv extends Action
         );
 
         return $response->successful([
-            (new FastExcel($eloquentGenerator()))->download($exportFilename, $this->withFormatCallback),
+            tap(
+                (new FastExcel($eloquentGenerator()))->download($exportFilename, $this->withFormatCallback),
+                function ($response) use ($exportFilename) {
+                    if ($response instanceof StreamedResponse && ! $response->headers->has('Content-Disposition')) {
+                        $response->headers->set(
+                            'Content-Disposition',
+                            HeaderUtils::makeDisposition(
+                                HeaderUtils::DISPOSITION_ATTACHMENT, $exportFilename, str_replace('%', '', Str::ascii($exportFilename))
+                            )
+                        );
+                    }
+                }
+            ),
+
         ]);
     }
 

@@ -20,7 +20,11 @@ export default {
     ]),
   },
 
-  data: () => ({ value: '' }),
+  data() {
+    return {
+      value: this.fieldDefaultValue(),
+    }
+  },
 
   created() {
     this.setInitialValue()
@@ -47,7 +51,14 @@ export default {
         this.field.value === undefined || this.field.value === null
       )
         ? this.field.value
-        : ''
+        : this.fieldDefaultValue()
+    },
+
+    /**
+     * Return the field default value.
+     */
+    fieldDefaultValue() {
+      return ''
     },
 
     /**
@@ -92,7 +103,7 @@ export default {
 
   computed: {
     /**
-     * Determine the current field
+     * Determine the current field.
      */
     currentField() {
       return this.field

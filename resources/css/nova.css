@@ -104,12 +104,10 @@ button.sidebar-section-title {
   @apply appearance-none inline-block align-middle select-none flex-shrink-0 h-4 w-4 text-primary-500 bg-white dark:bg-gray-900 rounded;
   -webkit-print-color-adjust: exact;
   color-adjust: exact;
-  display: inline-block;
-  vertical-align: middle;
-  background-origin: border-box;
-
   @apply border border-gray-300 focus:border-primary-300;
   @apply dark:border-gray-700 dark:focus:border-gray-500;
+  @apply disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed;
+  @apply enabled:hover:cursor-pointer;
 }
 
 .checkbox:focus,
@@ -135,15 +133,6 @@ button.sidebar-section-title {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-}
-
-.checkbox:disabled {
-  @apply bg-gray-50 dark:bg-gray-700;
-  cursor: not-allowed;
-}
-
-.checkbox:hover:not(:disabled) {
-  cursor: pointer;
 }
 
 html.dark .fake-checkbox-indeterminate,

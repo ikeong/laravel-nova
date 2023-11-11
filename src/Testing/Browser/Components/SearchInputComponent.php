@@ -239,6 +239,17 @@ class SearchInputComponent extends Component
     }
 
     /**
+     * Assert that the current page contains this component.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @return void
+     */
+    public function assert(Browser $browser)
+    {
+        $browser->waitFor($this->selector());
+    }
+
+    /**
      * Get the root selector associated with this component.
      *
      * @return string

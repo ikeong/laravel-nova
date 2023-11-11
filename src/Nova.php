@@ -181,7 +181,7 @@ class Nova
     /**
      * The initial path Nova should route to when visiting the base.
      *
-     * @var string
+     * @var string|(\Closure(\Illuminate\Http\Request):(string|null))
      */
     public static $initialPath = '/dashboards/main';
 
@@ -1002,6 +1002,9 @@ class Nova
             $userId = Auth::guard(config('nova.guard'))->id() ?? null;
 
             static::$jsonVariables = [
+                'debug' => function () {
+                    return config('app.debug') || app()->environment('testing');
+                },
                 'logo' => static::logo(),
                 'brandColors' => static::brandColors(),
                 'brandColorsCSS' => static::brandColorsCSS(),
@@ -1030,7 +1033,9 @@ class Nova
                 'forgotPasswordPath' => config('nova.routes.forgot_password', false),
                 'resetPasswordPath' => config('nova.routes.reset_password', false),
                 'debounce' => static::$debounce * 1000,
-                'initialPath' => static::$initialPath,
+                'initialPath' => function ($request) {
+                    return static::resolveInitialPath($request);
+                },
                 'base' => static::path(),
                 'userId' => $userId,
                 'mainMenu' => function ($request) use ($userId) {
@@ -1061,9 +1066,7 @@ class Nova
      */
     public static function checkLicenseValidity()
     {
-        return Cache::remember('nova_valid_license_key', 3600, function () {
-            return true;
-        });
+        return true;
     }
 
     /**
@@ -1315,7 +1318,7 @@ class Nova
     /**
      * Set the initial route path when visiting the base Nova url.
      *
-     * @param  string  $path
+     * @param  string|(\Closure(\Illuminate\Http\Request):(string|null))  $path
      * @return static
      */
     public static function initialPath($path)
@@ -1514,6 +1517,18 @@ class Nova
         }
 
         return str_replace('_', '-', $locale ?? app()->getLocale());
+    }
+
+    /**
+     * Resolve the user's initial path.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return string
+     */
+    public static function resolveInitialPath(Request $request)
+    {
+        /** @phpstan-ignore-next-line */
+        return value(static::$initialPath, $request) ?? '/dashboards/main';
     }
 
     /**

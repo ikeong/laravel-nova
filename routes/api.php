@@ -33,6 +33,7 @@ use Laravel\Nova\Http\Controllers\LensResourceRestoreController;
 use Laravel\Nova\Http\Controllers\MetricController;
 use Laravel\Nova\Http\Controllers\MorphableController;
 use Laravel\Nova\Http\Controllers\MorphedResourceAttachController;
+use Laravel\Nova\Http\Controllers\NotificationDeleteAllController;
 use Laravel\Nova\Http\Controllers\NotificationDeleteController;
 use Laravel\Nova\Http\Controllers\NotificationIndexController;
 use Laravel\Nova\Http\Controllers\NotificationReadAllController;
@@ -97,7 +98,8 @@ Route::get('/dashboards/cards/{dashboard}', DashboardCardController::class);
 Route::get('/nova-notifications', NotificationIndexController::class);
 Route::post('/nova-notifications/read-all', NotificationReadAllController::class);
 Route::post('/nova-notifications/{notification}/read', NotificationReadController::class);
-Route::delete('/nova-notifications/{notification}/delete', NotificationDeleteController::class);
+Route::delete('/nova-notifications/', NotificationDeleteAllController::class);
+Route::delete('/nova-notifications/{notification}', NotificationDeleteController::class);
 
 // Actions...
 Route::get('/{resource}/actions', [ActionController::class, 'index']);

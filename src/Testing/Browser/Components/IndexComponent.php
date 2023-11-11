@@ -52,9 +52,10 @@ class IndexComponent extends Component
      */
     public function waitForTable(Browser $browser, $seconds = null)
     {
-        $browser->whenAvailable('table[data-testid="resource-table"]', function ($browser) use ($seconds) {
-            $browser->waitFor('> tbody', $seconds);
-        }, $seconds);
+        $browser->waitUntilMissing('@loading-view')
+            ->whenAvailable('table[data-testid="resource-table"]', function ($browser) use ($seconds) {
+                $browser->waitFor('> tbody', $seconds);
+            }, $seconds);
     }
 
     /**
@@ -68,7 +69,8 @@ class IndexComponent extends Component
      */
     public function waitForEmptyDialog(Browser $browser, $seconds = null)
     {
-        $browser->waitFor('div[dusk="'.$this->resourceName.'-empty-dialog"]', $seconds);
+        $browser->waitUntilMissing('@loading-view')
+            ->waitFor('div[dusk="'.$this->resourceName.'-empty-dialog"]', $seconds);
     }
 
     /**
@@ -543,11 +545,18 @@ class IndexComponent extends Component
      *
      * @param  \Laravel\Dusk\Browser  $browser
      * @param  int|string  $id
+     * @param  int|string|null  $pivotId
      * @return void
      */
-    public function clickCheckboxForId(Browser $browser, $id)
+    public function clickCheckboxForId(Browser $browser, $id, $pivotId = null)
     {
-        $browser->click('[dusk="'.$id.'-row"] input.checkbox')->pause(175);
+        if (! is_null($pivotId)) {
+            $browser->click('[data-pivot-id="'.$pivotId.'"][dusk="'.$id.'-row"] input.checkbox');
+        } else {
+            $browser->click('[dusk="'.$id.'-row"] input.checkbox');
+        }
+
+        $browser->pause(175);
     }
 
     /**

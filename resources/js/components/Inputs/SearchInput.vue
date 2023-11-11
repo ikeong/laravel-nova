@@ -104,7 +104,7 @@
     </div>
 
     <teleport to="body">
-      <Backdrop @click="show = !show" :show="show" class="z-[35]" />
+      <Backdrop @click="close" :show="show" class="z-[35]" />
     </teleport>
   </div>
 </template>

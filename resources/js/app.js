@@ -22,6 +22,7 @@ import Toasted from 'toastedjs'
 import Emitter from 'tiny-emitter'
 import Layout from '@/layouts/AppLayout'
 import CodeMirror from 'codemirror'
+import { Settings } from 'luxon'
 import 'codemirror/mode/markdown/markdown'
 import 'codemirror/mode/javascript/javascript'
 import 'codemirror/mode/php/php'
@@ -89,6 +90,14 @@ class Nova {
     })
     this.$progress = NProgress
     this.$router = Inertia
+
+    if (config.debug === true) {
+      this.$testing = {
+        timezone: timezone => {
+          Settings.defaultZoneName = timezone
+        },
+      }
+    }
   }
 
   /**
@@ -132,9 +141,6 @@ class Nova {
       setup: ({ el, App, props, plugin }) => {
         this.mountTo = el
         this.app = createApp({ render: () => h(App, props) })
-
-        // TODO: Only needed until Vue 3.3 https://vuejs.org/guide/components/provide-inject.html#working-with-reactivity
-        this.app.config.unwrapInjectedRef = true
 
         this.app.use(plugin)
         this.app.use(FloatingVue, {
