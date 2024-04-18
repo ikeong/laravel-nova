@@ -4,7 +4,7 @@
 
     <template #filter>
       <input
-        class="w-full flex form-control form-control-sm form-input form-input-bordered"
+        class="w-full flex form-control h-8 text-xs form-input form-control-bordered"
         type="date"
         :dusk="`${filter.name}-date-filter`"
         name="date-filter"

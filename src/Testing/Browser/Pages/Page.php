@@ -83,7 +83,19 @@ class Page extends Dusk
      */
     public function assertWithoutBreadcrumb(Browser $browser)
     {
-        $browser->assertMissing('@nova-breadcrumb');
+        $browser->assertMissing('@breadcrumbs');
+    }
+
+    /**
+     * Set luxon timezone for the frontend.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  string  $timezone
+     * @return void
+     */
+    public function luxonTimezone(Browser $browser, string $timezone = 'system')
+    {
+        $browser->script('Nova.$testing.timezone("'.$timezone.'")');
     }
 
     /**
@@ -94,9 +106,8 @@ class Page extends Dusk
     public static function siteElements(): array
     {
         return [
-            '@nova-content' => '#app [data-testid="content"]',
-            '@nova-form' => '#app [data-testid="content"] form:not([data-testid="form-button"])',
-            '@nova-breadcrumb' => '#app [data-testid="content"] nav[aria-label="breadcrumb"]',
+            '@nova-content' => '[dusk="content"]',
+            '@nova-form' => '[dusk="content"]',
         ];
     }
 

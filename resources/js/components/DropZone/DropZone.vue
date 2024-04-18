@@ -9,6 +9,7 @@
       :multiple="multiple"
       :accept="acceptedTypes"
       :disabled="disabled"
+      tabindex="-1"
     />
 
     <div class="space-y-4">
@@ -22,9 +23,13 @@
         />
       </div>
 
-      <label
+      <div
+        tabindex="0"
+        role="button"
         @click="handleClick"
-        class="block cursor-pointer p-4 bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-900 border-4 border-dashed hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600 rounded-lg"
+        @keydown.space.prevent="handleClick"
+        @keydown.enter.prevent="handleClick"
+        class="focus:outline-none focus:!border-primary-500 block cursor-pointer p-4 bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-900 border-4 border-dashed hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600 rounded-lg"
         :class="{ 'border-gray-300 dark:border-gray-600': startedDrag }"
         @dragenter.prevent="handleOnDragEnter"
         @dragleave.prevent="handleOnDragLeave"
@@ -33,9 +38,9 @@
       >
         <div class="flex items-center space-x-4 pointer-events-none">
           <p class="text-center pointer-events-none">
-            <DefaultButton component="div">
+            <Button as="div">
               {{ multiple ? __('Choose Files') : __('Choose File') }}
-            </DefaultButton>
+            </Button>
           </p>
 
           <p
@@ -48,7 +53,7 @@
             }}
           </p>
         </div>
-      </label>
+      </div>
     </div>
   </div>
 </template>
@@ -57,6 +62,7 @@
 import { ref } from 'vue'
 import { useLocalization } from '@/composables/useLocalization'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import { Button } from 'laravel-nova-ui'
 
 const emit = defineEmits(['fileChanged', 'fileRemoved'])
 const { __ } = useLocalization()

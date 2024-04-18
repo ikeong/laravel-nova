@@ -19,9 +19,9 @@ class Markdown extends Field implements DeletableContract, FilterableField, Prev
     use Expandable;
     use FieldFilterable;
     use HasAttachments;
+    use ManagesPresets;
     use Storable;
     use SupportsDependentFields;
-    use ManagesPresets;
 
     /**
      * The field's component.

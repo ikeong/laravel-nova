@@ -21,15 +21,15 @@ use Laravel\Nova\TrashedStatus;
  */
 class BelongsToMany extends Field implements DeletableContract, FilterableField, ListableField, PivotableField, RelatableField
 {
-    use AttachableRelation,
-        Deletable,
-        DeterminesIfCreateRelationCanBeShown,
-        DetachesPivotModels,
-        EloquentFilterable,
-        FormatsRelatableDisplayValues,
-        ManyToManyCreationRules,
-        Searchable,
-        Collapsable;
+    use AttachableRelation;
+    use Collapsable;
+    use Deletable;
+    use DetachesPivotModels;
+    use DeterminesIfCreateRelationCanBeShown;
+    use EloquentFilterable;
+    use FormatsRelatableDisplayValues;
+    use ManyToManyCreationRules;
+    use Searchable;
 
     /**
      * The field's component.
@@ -260,7 +260,7 @@ class BelongsToMany extends Field implements DeletableContract, FilterableField,
             'avatar' => $resource->resolveAvatarUrl($request),
             'display' => $this->formatDisplayValue($resource),
             'subtitle' => $resource->subtitle(),
-            'value' => $resource->getKey(),
+            'value' => optional(ID::forResource($resource))->value ?? $resource->getKey(),
         ]);
     }
 

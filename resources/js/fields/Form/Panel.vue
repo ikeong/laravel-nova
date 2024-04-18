@@ -1,6 +1,10 @@
 <template>
   <div v-if="panel.fields.length > 0" v-show="visibleFieldsCount > 0">
-    <Heading :level="1" :class="panel.helpText ? 'mb-2' : 'mb-3'">
+    <Heading
+      :level="1"
+      :class="panel.helpText ? 'mb-2' : 'mb-3'"
+      :dusk="`${dusk}-heading`"
+    >
       {{ panel.name }}
     </Heading>
 
@@ -62,6 +66,7 @@ export default {
     showHelpText: { type: Boolean, default: false },
     panel: { type: Object, required: true },
     name: { default: 'Panel' },
+    dusk: { type: String },
     fields: { type: Array, default: [] },
     formUniqueId: { type: String },
     validationErrors: { type: Object, required: true },

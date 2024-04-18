@@ -6,7 +6,7 @@
       <SearchInput
         v-if="isSearchable"
         ref="searchable"
-        :data-testid="`${field.uniqueKey}-search-filter`"
+        :dusk="`${field.uniqueKey}-search-filter`"
         @input="performSearch"
         @clear="handleClearSelection"
         @shown="handleShowingActiveSearchInput"
@@ -191,7 +191,7 @@ export default {
     selectInitialResource() {
       this.selectedResource = find(
         this.availableResources,
-        r => r.value == this.selectedResourceId
+        r => r.value === this.selectedResourceId
       )
     },
 
@@ -199,11 +199,15 @@ export default {
       Nova.$emit('filter-active', this.filterKey)
     },
 
+    closeSearchableRef() {
+      if (this.$refs.searchable) {
+        this.$refs.searchable.close()
+      }
+    },
+
     handleClosingInactiveSearchInputs(key) {
       if (key !== this.filterKey) {
-        if (this.$refs.searchable) {
-          this.$refs.searchable.close()
-        }
+        this.closeSearchableRef()
       }
     },
 
@@ -211,20 +215,14 @@ export default {
      * Handle clear search selection
      */
     handleClearSelection() {
-      if (this.$refs.searchable) {
-        this.$refs.searchable.close()
-      }
-
       this.clearSelection()
     },
 
     handleChange() {
-      this.$store.commit(`${this.resourceName}/updateFilterState`, {
+      this.$emit('change', {
         filterClass: this.filterKey,
         value: this.selectedResourceId,
       })
-
-      this.$emit('change')
     },
 
     handleFilterReset() {
@@ -236,9 +234,7 @@ export default {
       this.selectedResource = null
       this.availableResources = []
 
-      if (this.$refs.searchable) {
-        this.$refs.searchable.close()
-      }
+      this.closeSearchableRef()
 
       this.initializeComponent()
     },

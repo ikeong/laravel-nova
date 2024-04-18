@@ -8,9 +8,9 @@
         class="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-20"
         role="alert"
       >
-        <ErrorPageIcon class="flex-shrink-0 md:w-[20rem]" />
+        <ErrorPageIcon class="shrink-0 md:w-[20rem]" />
 
-        <div class="md:w-[20rem] md:flex-shrink-0 space-y-2 md:space-y-4">
+        <div class="md:w-[20rem] md:shrink-0 space-y-2 md:space-y-4">
           <slot />
 
           <Link

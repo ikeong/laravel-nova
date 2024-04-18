@@ -19,12 +19,14 @@ class Detail extends Page
      *
      * @param  string  $resourceName
      * @param  string  $resourceId
+     * @param  array  $queryParams
      * @return void
      */
-    public function __construct($resourceName, $resourceId)
+    public function __construct($resourceName, $resourceId, $queryParams = [])
     {
         $this->resourceId = $resourceId;
         $this->resourceName = $resourceName;
+        $this->queryParams = $queryParams;
 
         $this->setNovaPage("/resources/{$this->resourceName}/{$this->resourceId}");
     }
@@ -234,7 +236,7 @@ class Detail extends Page
     public function elements()
     {
         return [
-            '@nova-resource-detail' => '#app [data-testid="content"] [dusk="'.$this->resourceName.'-detail-component"]',
+            '@nova-resource-detail' => '[dusk="'.$this->resourceName.'-detail-component"]',
         ];
     }
 }

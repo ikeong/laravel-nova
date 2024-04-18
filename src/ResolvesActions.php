@@ -2,6 +2,7 @@
 
 namespace Laravel\Nova;
 
+use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionCollection;
 use Laravel\Nova\Fields\BelongsToMany;
 use Laravel\Nova\Fields\MorphToMany;
@@ -29,25 +30,15 @@ trait ResolvesActions
                     ->filter->authorizedToSee($request);
 
         if (optional($resource)->exists === true) {
-            return $actions->filter->authorizedToRun($request, $resource)->values();
+            return $actions->each->authorizedToRun($request, $resource)->values();
         }
 
         if (! is_null($resources = $request->selectedResources())) {
-            $rejectedActions = collect();
-
-            $resources->each(function ($resource) use ($request, $actions, $rejectedActions) {
-                $actions->each(function ($action) use ($request, $resource, $rejectedActions) {
-                    if (! $action->authorizedToRun($request, $resource)) {
-                        $rejectedActions->push($action->uriKey());
-                    }
-                });
+            $resources->each(function ($resource) use ($request, $actions) {
+                $actions->each->authorizedToRun($request, $resource);
             });
 
-            return $actions->reject(function ($action) use ($rejectedActions) {
-                return $rejectedActions->contains(function ($value) use ($action) {
-                    return $action->uriKey() === $value;
-                });
-            })->values();
+            return $actions->values();
         }
 
         return $actions->values();
@@ -64,29 +55,18 @@ trait ResolvesActions
         $resource = $this->resource;
 
         $actions = $this->resolveActions($request)
-                    ->filter->shownOnIndex()
-                    ->filter->authorizedToSee($request);
+                    ->authorizedToSeeOnIndex($request);
 
         if (optional($resource)->exists === true) {
-            return $actions->filter->authorizedToRun($request, $resource)->values();
+            return $actions->each->authorizedToRun($request, $resource)->values();
         }
 
         if (! is_null($resources = $request->selectedResources())) {
-            $rejectedActions = collect();
-
-            $resources->each(function ($resource) use ($request, $actions, $rejectedActions) {
-                $actions->each(function ($action) use ($request, $resource, $rejectedActions) {
-                    if (! $action->authorizedToRun($request, $resource)) {
-                        $rejectedActions->push($action->uriKey());
-                    }
-                });
+            $resources->each(function ($resource) use ($request, $actions) {
+                $actions->each->authorizedToRun($request, $resource);
             });
 
-            return $actions->reject(function ($action) use ($rejectedActions) {
-                return $rejectedActions->contains(function ($value) use ($action) {
-                    return $action->uriKey() === $value;
-                });
-            })->values();
+            return $actions->values();
         }
 
         return $actions->values();
@@ -101,9 +81,10 @@ trait ResolvesActions
     public function availableActionsOnDetail(NovaRequest $request)
     {
         return $this->resolveActions($request)
-                    ->filter->shownOnDetail()
-                    ->filter->authorizedToSee($request)
-                    ->filter->authorizedToRun($request, $this->resource)
+                    ->authorizedToSeeOnDetail($request)
+                    ->each(function (Action $a) use ($request) {
+                        $a->authorizedToRun($request, $this->resource);
+                    })
                     ->values();
     }
 
@@ -116,9 +97,10 @@ trait ResolvesActions
     public function availableActionsOnTableRow(NovaRequest $request)
     {
         return $this->resolveActions($request)
-                    ->filter->shownOnTableRow()
-                    ->filter->authorizedToSee($request)
-                    ->filter->authorizedToRun($request, $this->resource)
+                    ->authorizedToSeeOnTableRow($request)
+                    ->each(function (Action $a) use ($request) {
+                        $a->authorizedToRun($request, $this->resource);
+                    })
                     ->values();
     }
 
@@ -139,26 +121,30 @@ trait ResolvesActions
      * Get the "pivot" actions that are available for the given request.
      *
      * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
-     * @return \Illuminate\Support\Collection<int, \Laravel\Nova\Actions\Action>
+     * @return \Laravel\Nova\Actions\ActionCollection<int, \Laravel\Nova\Actions\Action>
      */
     public function availablePivotActions(NovaRequest $request)
     {
-        return $this->resolvePivotActions($request)->filter->authorizedToSee($request)->values();
+        return $this->resolvePivotActions($request)
+                    ->authorizedToSeeOnIndex($request)
+                    ->values();
     }
 
     /**
      * Get the "pivot" actions for the given request.
      *
      * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
-     * @return \Illuminate\Support\Collection<int, \Laravel\Nova\Actions\Action>
+     * @return \Laravel\Nova\Actions\ActionCollection<int, \Laravel\Nova\Actions\Action>
      */
     public function resolvePivotActions(NovaRequest $request)
     {
         if ($request->viaRelationship()) {
-            return collect(array_values($this->filter($this->getPivotActions($request))));
+            return ActionCollection::make(
+                array_values($this->filter($this->getPivotActions($request)))
+            )->each->showOnIndex();
         }
 
-        return collect();
+        return ActionCollection::make();
     }
 
     /**
@@ -169,10 +155,13 @@ trait ResolvesActions
      */
     protected function getPivotActions(NovaRequest $request)
     {
-        $field = $this->availableFields($request)->first(function ($field) use ($request) {
+        $resource = Nova::resourceInstanceForKey($request->viaResource);
+
+        $field = $resource->availableFields($request)->first(function ($field) use ($request) {
             return isset($field->resourceName) &&
-                   $field->resourceName == $request->viaResource &&
-                   ($field instanceof BelongsToMany || $field instanceof MorphToMany);
+                   $field->resourceName == $request->resource &&
+                   ($field instanceof BelongsToMany || $field instanceof MorphToMany) &&
+                   $field->manyToManyRelationship === $request->viaRelationship;
         });
 
         if ($field && isset($field->actionsCallback)) {

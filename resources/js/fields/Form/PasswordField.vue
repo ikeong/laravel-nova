@@ -11,7 +11,7 @@
         :dusk="field.attribute"
         type="password"
         v-model="value"
-        class="w-full form-control form-input form-input-bordered"
+        class="w-full form-control form-input form-control-bordered"
         :class="errorClasses"
         :placeholder="placeholder"
         autocomplete="new-password"

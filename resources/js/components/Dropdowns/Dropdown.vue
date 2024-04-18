@@ -1,162 +1,79 @@
-<template>
-  <div>
-    <button
-      ref="trigger"
-      :aria-expanded="show === true ? 'true' : 'false'"
-      class="rounded active:outline-none active:ring focus:outline-none focus:ring focus:ring-primary-200 dark:focus:ring-gray-600"
-      type="button"
-      @click.stop="showMenu"
-    >
-      <slot />
-    </button>
-
-    <teleport to="body">
-      <div
-        v-show="show"
-        ref="menu"
-        class="relative"
-        :class="extraClasses"
-        :data-menu-open="show"
-        @click="handleClick"
-      >
-        <slot name="menu" />
-      </div>
-    </teleport>
-
-    <teleport to="#dropdowns">
-      <div
-        v-if="show"
-        class="z-[35] fixed inset-0"
-        dusk="dropdown-overlay"
-        @click="() => hideMenu()"
-      />
-    </teleport>
-  </div>
-</template>
-
 <script>
-import debounce from 'lodash/debounce'
-import { createPopper } from '@popperjs/core'
+import {
+  autoUpdate,
+  flip,
+  offset,
+  shift,
+  size,
+  useFloating,
+} from '@floating-ui/vue'
+import {
+  cloneVNode,
+  computed,
+  h,
+  mergeProps,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  Teleport,
+  Transition,
+  watch,
+  withModifiers,
+} from 'vue'
+import { useId } from '../../composables/useId'
+import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
+import { renderSlotFragments } from '../../util/renderSlotFragments'
+import { useCloseOnEsc } from '../../composables/useCloseOnEsc'
 
 export default {
   emits: ['menu-opened', 'menu-closed'],
 
+  inheritAttrs: false,
+
   props: {
-    offset: {
-      type: [Number, String],
-      default: 5,
-    },
-
-    placement: {
-      type: String,
-      default: 'bottom-start',
-    },
-
-    boundary: {
-      type: String,
-      default: 'viewPort',
-    },
-
-    autoHide: {
-      type: Boolean,
-      default: true,
-    },
-
-    handleInternalClicks: {
-      type: Boolean,
-      default: true,
-    },
-
-    triggerOverrideFunction: {
-      type: Function,
-    },
+    offset: { type: [Number, String], default: 5 },
+    placement: { type: String, default: 'bottom-start' },
+    boundary: { type: String, default: 'viewPort' },
+    dusk: { type: String, default: null },
+    shouldCloseOnBlur: { type: Boolean, default: true },
   },
 
-  data: () => ({
-    show: false,
-    popper: null,
-    debouncedHideMenu: null,
-  }),
+  setup(props, { slots }) {
+    const menuShown = ref(false)
+    const triggerRef = ref(null)
+    const teleportedRef = ref(null)
+    const menuRef = ref(null)
 
-  methods: {
-    handleClick() {
-      if (this.handleInternalClicks) {
-        this.hideMenu()
-      }
-    },
+    const { activate, deactivate } = useFocusTrap(menuRef, {
+      initialFocus: false,
+      allowOutsideClick: true,
+    })
 
-    createPopper() {
-      /**
-       * Create the popper for the containing element.
-       */
-      this.popper = createPopper(this.$refs.trigger, this.$refs.menu, {
-        placement: this.resolvedPlacement,
-        boundary: this.boundary,
-        modifiers: {
-          name: 'offset',
-          options: {
-            offset: [0, this.offset],
-          },
-        },
-      })
-    },
+    const usesFocusTrap = ref(true)
 
-    /**
-     * Show the dropdown menu.
-     */
-    showMenu() {
-      if (this.triggerOverrideFunction) {
-        this.triggerOverrideFunction()
-        return
-      }
+    const hasTrapFocus = computed(() => {
+      return menuShown.value === true && usesFocusTrap.value === true
+    })
 
-      if (this.debouncedHideMenu) {
-        this.debouncedHideMenu.cancel()
-        this.debouncedHideMenu = null
-      }
+    const disableModalFocusTrap = () => {
+      usesFocusTrap.value = false
+    }
 
-      this.show = true
+    const enableModalFocusTrap = () => {
+      usesFocusTrap.value = true
+    }
 
-      this.$emit('menu-opened')
+    useCloseOnEsc(() => (menuShown.value = false))
 
-      this.createPopper()
-    },
+    const dropdownButtonLabel = computed(
+      () => `nova-ui-dropdown-button-${useId()}`
+    )
+    const menuLabel = computed(() => `nova-ui-dropdown-menu-${useId()}`)
 
-    /**
-     * Hide the dropdown menu.
-     */
-    hideMenu() {
-      if (this.show === true && this.debouncedHideMenu) {
-        this.debouncedHideMenu = null
-      }
-
-      this.show = false
-
-      this.$emit('menu-closed')
-
-      if (this.popper) {
-        this.popper.destroy()
-        this.popper = null
-      }
-    },
-
-    delayedHideMenu() {
-      if (this.debouncedHideMenu === null) {
-        this.debouncedHideMenu = debounce(() => this.hideMenu(), 500)
-      }
-
-      this.debouncedHideMenu()
-    },
-  },
-
-  computed: {
-    extraClasses() {
-      return ['z-40']
-    },
-
-    resolvedPlacement() {
+    const resolvedPlacement = computed(() => {
       if (!Nova.config('rtlEnabled')) {
-        return this.placement
+        return props.placement
       }
 
       return {
@@ -170,8 +87,119 @@ export default {
         'right-end': 'right-start',
         'left-start': 'left-end',
         'left-end': 'left-start',
-      }[this.placement]
-    },
+      }[props.placement]
+    })
+
+    const { floatingStyles } = useFloating(triggerRef, menuRef, {
+      whileElementsMounted: autoUpdate,
+      placement: resolvedPlacement.value,
+      middleware: [offset(props.offset), flip(), shift({ padding: 5 }), size()],
+    })
+
+    watch(
+      () => hasTrapFocus,
+      async v => {
+        await nextTick()
+        v ? activate() : deactivate()
+      }
+    )
+
+    onMounted(() => {
+      Nova.$on('disable-focus-trap', disableModalFocusTrap)
+      Nova.$on('enable-focus-trap', enableModalFocusTrap)
+    })
+
+    onBeforeUnmount(() => {
+      Nova.$off('disable-focus-trap', disableModalFocusTrap)
+      Nova.$off('enable-focus-trap', enableModalFocusTrap)
+
+      usesFocusTrap.value = false
+    })
+
+    return () => {
+      const children = renderSlotFragments(slots.default())
+      const [trigger, ...otherChildren] = children
+
+      const mergedProps = mergeProps({
+        ...trigger.props,
+        ...{
+          id: dropdownButtonLabel.value,
+          'aria-expanded': menuShown.value === true ? 'true' : 'false',
+          'aria-haspopup': 'true',
+          'aria-controls': menuLabel.value,
+          onClick: withModifiers(() => {
+            menuShown.value = !menuShown.value
+          }, ['stop']),
+        },
+      })
+
+      const cloned = cloneVNode(trigger, mergedProps)
+
+      // Explicitly override props starting with `on`.
+      // It seems cloneVNode from Vue doesn't like overriding `onXXX` props. So
+      // we have to do it manually.
+      for (const prop in mergedProps) {
+        if (prop.startsWith('on')) {
+          cloned.props ||= {}
+          cloned.props[prop] = mergedProps[prop]
+        }
+      }
+
+      return h('div', { dusk: props.dusk }, [
+        h('span', { ref: triggerRef }, cloned),
+        h(
+          Teleport,
+          { to: 'body' },
+          h(
+            Transition,
+            {
+              enterActiveClass: 'transition duration-0 ease-out',
+              enterFromClass: 'opacity-0',
+              enterToClass: 'opacity-100',
+              leaveActiveClass: 'transition duration-300 ease-in',
+              leaveFromClass: 'opacity-100',
+              leaveToClass: 'opacity-0',
+            },
+            () => [
+              menuShown.value
+                ? h(
+                    'div',
+                    {
+                      ref: teleportedRef,
+                      dusk: 'dropdown-teleported',
+                    },
+                    [
+                      h(
+                        'div',
+                        {
+                          ref: menuRef,
+                          id: menuLabel.value,
+                          'aria-labelledby': dropdownButtonLabel.value,
+                          tabindex: '0',
+                          class: 'relative z-[50]',
+                          style: floatingStyles.value,
+                          'data-menu-open': menuShown.value,
+                          dusk: 'dropdown-menu',
+                          onClick: () =>
+                            props.shouldCloseOnBlur
+                              ? (menuShown.value = false)
+                              : null,
+                        },
+                        slots.menu()
+                      ),
+                      h('div', {
+                        class: 'z-[49] fixed inset-0',
+                        dusk: 'dropdown-overlay',
+                        onClick: () => (menuShown.value = false),
+                      }),
+                    ]
+                  )
+                : null,
+            ]
+          )
+        ),
+      ])
+    }
   },
 }
 </script>

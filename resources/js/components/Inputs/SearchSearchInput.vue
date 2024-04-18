@@ -1,10 +1,5 @@
 <template>
-  <div
-    ref="searchInputContainer"
-    v-bind="$attrs"
-    :data-testid="dataTestid"
-    :dusk="dataTestid"
-  >
+  <div ref="searchInputContainer" v-bind="$attrs" :dusk="dusk">
     <div class="relative">
       <!-- Search Input -->
       <input
@@ -12,9 +7,9 @@
         @keydown.enter.prevent="chooseSelected"
         @keydown.down.prevent="move(1)"
         @keydown.up.prevent="move(-1)"
-        class="block w-full form-control form-input form-input-bordered"
+        class="block w-full form-control form-input form-control-bordered"
         :class="{
-          'form-input-border-error': error,
+          'form-control-bordered-error': error,
         }"
         v-model="searchText"
         :disabled="disabled"
@@ -28,54 +23,57 @@
     </div>
 
     <!-- Search Result Dropdown -->
-    <div
-      v-if="dropdownShown"
-      ref="searchResultsDropdown"
-      :style="{ zIndex: 2000 }"
-    >
+    <teleport to="body">
       <div
-        v-show="loading || options.length > 0"
-        class="rounded-lg px-0 bg-white dark:bg-gray-900 shadow border border-gray-200 dark:border-gray-700 my-1 overflow-hidden"
-        :style="{ width: searchInputWidth + 'px', zIndex: 2000 }"
+        v-if="dropdownShown"
+        ref="searchResultsDropdown"
+        :style="{ zIndex: 2000 }"
+        :dusk="`${dusk}-dropdown`"
       >
-        <!-- Search Results -->
         <div
-          ref="searchResultsContainer"
-          class="relative overflow-y-scroll text-sm divide-y divide-gray-100 dark:divide-gray-800"
-          tabindex="-1"
-          style="max-height: 155px"
+          v-show="loading || options.length > 0"
+          class="rounded-lg px-0 bg-white dark:bg-gray-900 shadow border border-gray-200 dark:border-gray-700 my-1 overflow-hidden"
+          :style="{ width: searchInputWidth + 'px', zIndex: 2000 }"
         >
-          <div v-if="loading" class="px-3 py-2">
-            <Loader width="30" />
-          </div>
-
+          <!-- Search Results -->
           <div
-            v-else
-            v-for="(option, index) in options"
-            :dusk="`${dataTestid}-result-${index}`"
-            @click.stop="choose(option)"
-            :ref="el => setSelectedRef(index, el)"
-            :key="getTrackedByKey(option)"
-            class="px-3 py-1.5 cursor-pointer"
-            :class="{
-              [`search-input-item-${index}`]: true,
-              'hover:bg-gray-100 dark:hover:bg-gray-800':
-                index !== selectedOptionIndex,
-              'bg-primary-500 text-white dark:text-gray-900':
-                index === selectedOptionIndex,
-            }"
+            ref="searchResultsContainer"
+            class="relative overflow-y-scroll text-sm divide-y divide-gray-100 dark:divide-gray-800"
+            tabindex="-1"
+            style="max-height: 155px"
+            :dusk="`${dusk}-results`"
           >
-            <slot
-              name="option"
-              :option="option"
-              :selected="index === selectedOptionIndex"
-            />
+            <div v-if="loading" class="px-3 py-2">
+              <Loader width="30" />
+            </div>
+
+            <div
+              v-else
+              v-for="(option, index) in options"
+              :dusk="`${dusk}-result-${index}`"
+              @click.stop="choose(option)"
+              :ref="el => setSelectedRef(index, el)"
+              :key="getTrackedByKey(option)"
+              class="px-3 py-1.5 cursor-pointer"
+              :class="{
+                [`search-input-item-${index}`]: true,
+                'hover:bg-gray-100 dark:hover:bg-gray-800':
+                  index !== selectedOptionIndex,
+                'bg-primary-500 text-white dark:text-gray-900':
+                  index === selectedOptionIndex,
+              }"
+            >
+              <slot
+                name="option"
+                :option="option"
+                :selected="index === selectedOptionIndex"
+                :dusk="`${dusk}-result-${index}`"
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <teleport to="body">
       <Backdrop @click="close" :show="dropdownShown" class="z-[35]" />
     </teleport>
   </div>
@@ -83,19 +81,19 @@
 
 <script setup>
 import { createPopper } from '@popperjs/core'
-import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import debounce from 'lodash/debounce'
 import get from 'lodash/get'
-import findIndex from 'lodash/findIndex'
+import { useEventListener } from '@vueuse/core'
 
-const debouncer = debounce(callback => callback(), props.debounce)
+defineOptions({ inheritAttrs: false })
 
 // Events
 const emit = defineEmits(['clear', 'input', 'selected'])
 
 // Props
 const props = defineProps({
-  dataTestid: {},
+  dusk: {},
   error: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
   options: { type: Array, default: [] },
@@ -103,6 +101,8 @@ const props = defineProps({
   debounce: { type: Number, default: 500 },
   trackBy: { type: String },
 })
+
+const debouncer = debounce(callback => callback(), props.debounce)
 
 // References
 const popper = ref(null)
@@ -120,8 +120,12 @@ const dropdownShown = ref(false)
 const selectedOptionIndex = ref(0)
 
 // Lifecycle Methods
-onMounted(() => document.addEventListener('keydown', handleEscape))
-onBeforeUnmount(() => document.removeEventListener('keydown', handleEscape))
+useEventListener(document, 'keydown', e => {
+  // 'tab' or 'escape'
+  if (dropdownShown.value && (e.keyCode === 9 || e.keyCode === 27)) {
+    setTimeout(() => close(), 50)
+  }
+})
 
 // Watchers
 watch(searchText, newValue => {
@@ -187,10 +191,6 @@ function move(offset) {
   }
 }
 
-function findOptionIndex(option) {
-  return findIndex(props.options, [props.trackBy, get(option, props.trackBy)])
-}
-
 function findOption(index) {
   return props.options[index]
 }
@@ -205,13 +205,6 @@ function chooseSelected(event) {
   if (event.isComposing || event.keyCode === 229) return
   const selectedOption = findOption(selectedOptionIndex.value)
   choose(selectedOption)
-}
-
-function handleEscape(e) {
-  // 'tab' or 'escape'
-  if (dropdownShown.value === true && (e.keyCode === 9 || e.keyCode === 27)) {
-    setTimeout(() => close(), 50)
-  }
 }
 
 function updateScrollPosition() {
@@ -245,35 +238,3 @@ function setSelectedRef(index, el) {
   }
 }
 </script>
-
-<script>
-export default {
-  inheritAttrs: false,
-}
-</script>
-
-<!--  props: {-->
-<!--    dataTestid: {},-->
-<!--  },-->
-
-<!--    chooseSelected(event) {-->
-<!--      if (event.isComposing || event.keyCode === 229) return-->
-
-<!--      if (this.data[this.selected] !== undefined) {-->
-<!--        this.$emit('selected', this.data[this.selected])-->
-<!--        this.$refs.search.focus()-->
-<!--        this.$nextTick(() => this.close())-->
-<!--        this.search = ''-->
-<!--      }-->
-<!--    },-->
-
-<!--    choose(option) {-->
-<!--      this.selected = findIndex(this.data, [-->
-<!--        this.trackBy,-->
-<!--        get(option, this.trackBy),-->
-<!--      ])-->
-<!--      this.$emit('selected', option)-->
-<!--      this.$refs.search.focus()-->
-<!--      this.$nextTick(() => this.close())-->
-<!--      this.search = ''-->
-<!--    },-->

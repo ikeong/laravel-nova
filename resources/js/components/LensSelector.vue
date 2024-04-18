@@ -1,12 +1,12 @@
 <template>
-  <Dropdown
-    v-if="lenses.length > 0"
-    class="hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
-  >
-    <span class="sr-only">{{ __('Lens Dropdown') }}</span>
-    <DropdownTrigger class="toolbar-button px-2">
-      <Icon class="dark:text-gray-400" height="23" type="video-camera" />
-    </DropdownTrigger>
+  <Dropdown placement="bottom-end">
+    <Button
+      variant="ghost"
+      padding="tight"
+      icon="video-camera"
+      trailing-icon="chevron-down"
+      :aria-label="__('Lens Dropdown')"
+    />
 
     <template #menu>
       <DropdownMenu
@@ -29,8 +29,8 @@
   </Dropdown>
 </template>
 
-<script>
-export default {
-  props: ['resourceName', 'lenses'],
-}
+<script setup>
+import { Button } from 'laravel-nova-ui'
+
+defineProps(['resourceName', 'lenses'])
 </script>

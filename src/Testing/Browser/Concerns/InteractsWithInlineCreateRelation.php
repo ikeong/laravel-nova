@@ -42,7 +42,7 @@ trait InteractsWithInlineCreateRelation
         $this->showInlineCreate($browser, $uriKey, function ($browser) use ($fieldCallback) {
             $fieldCallback($browser);
 
-            $browser->click('@create-button')->pause(750);
+            $browser->click('@create-button')->pause(250);
         });
     }
 }

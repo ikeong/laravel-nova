@@ -16,8 +16,8 @@
         <label class="block mb-2" for="email">{{ __('Email Address') }}</label>
         <input
           v-model="form.email"
-          class="form-control form-input form-input-bordered w-full"
-          :class="{ 'form-input-border-error': form.errors.has('email') }"
+          class="form-control form-input form-control-bordered w-full"
+          :class="{ 'form-control-bordered-error': form.errors.has('email') }"
           id="email"
           type="email"
           name="email"
@@ -34,8 +34,10 @@
         <label class="block mb-2" for="password">{{ __('Password') }}</label>
         <input
           v-model="form.password"
-          class="form-control form-input form-input-bordered w-full"
-          :class="{ 'form-input-border-error': form.errors.has('password') }"
+          class="form-control form-input form-control-bordered w-full"
+          :class="{
+            'form-control-bordered-error': form.errors.has('password'),
+          }"
           id="password"
           type="password"
           name="password"
@@ -53,9 +55,11 @@
         }}</label>
         <input
           v-model="form.password_confirmation"
-          class="form-control form-input form-input-bordered w-full"
+          class="form-control form-input form-control-bordered w-full"
           :class="{
-            'form-input-border-error': form.errors.has('password_confirmation'),
+            'form-control-bordered-error': form.errors.has(
+              'password_confirmation'
+            ),
           }"
           id="password_confirmation"
           type="password"
@@ -71,14 +75,13 @@
         </HelpText>
       </div>
 
-      <LoadingButton
+      <Button
         class="w-full flex justify-center"
         type="submit"
-        :disabled="form.processing"
         :loading="form.processing"
       >
         {{ __('Reset Password') }}
-      </LoadingButton>
+      </Button>
     </form>
   </div>
 </template>
@@ -86,9 +89,14 @@
 <script>
 import Cookies from 'js-cookie'
 import Auth from '@/layouts/Auth'
+import { Button } from 'laravel-nova-ui'
 
 export default {
   layout: Auth,
+
+  components: {
+    Button,
+  },
 
   props: ['email', 'token'],
 

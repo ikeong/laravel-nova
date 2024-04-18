@@ -4,8 +4,10 @@ namespace Laravel\Nova\Console;
 
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Str;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputOption;
 
+#[AsCommand(name: 'nova:repeatable')]
 class RepeatableCommand extends GeneratorCommand
 {
     use ResolvesStubPath;

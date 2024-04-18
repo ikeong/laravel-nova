@@ -24,7 +24,8 @@ class LoginController extends Controller
     |
     */
 
-    use AuthenticatesUsers, ValidatesRequests;
+    use AuthenticatesUsers;
+    use ValidatesRequests;
 
     /**
      * Create a new controller instance.
@@ -59,7 +60,7 @@ class LoginController extends Controller
      */
     protected function authenticated(Request $request, $user)
     {
-        $redirect = redirect()->intended($this->redirectPath());
+        $redirect = redirect()->intended($this->redirectPath($request));
 
         return $request->wantsJson()
             ? new JsonResponse([
@@ -80,17 +81,18 @@ class LoginController extends Controller
 
         $request->session()->invalidate();
 
-        return redirect()->intended($this->redirectPath());
+        return redirect()->intended($this->redirectPath($request));
     }
 
     /**
      * Get the post register / login redirect path.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return string
      */
-    public function redirectPath()
+    public function redirectPath(Request $request)
     {
-        return Nova::url(Nova::$initialPath);
+        return Nova::url(Nova::resolveInitialPath($request));
     }
 
     /**

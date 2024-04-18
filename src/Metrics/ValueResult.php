@@ -4,6 +4,19 @@ namespace Laravel\Nova\Metrics;
 
 use JsonSerializable;
 
+/**
+ * @phpstan-type TNumbroFormat array{
+ *   average?: bool,
+ *   forceSign?: bool,
+ *   mantissa?: int,
+ *   negative?: string,
+ *   optionalMantissa?: bool,
+ *   output?: string,
+ *   spaceSeparated?: bool,
+ *   thousandSeparated?: bool,
+ *   trimMantissa?: bool
+ * }
+ */
 class ValueResult implements JsonSerializable
 {
     use TransformsResults;
@@ -167,8 +180,10 @@ class ValueResult implements JsonSerializable
     /**
      * Set the metric value formatting.
      *
-     * @param  string  $format
+     * @param  array<string, mixed>|string  $format
      * @return $this
+     *
+     * @phpstan-param TNumbroFormat|string  $format
      */
     public function format($format)
     {

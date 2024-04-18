@@ -16,8 +16,8 @@
         <label class="block mb-2" for="email">{{ __('Email Address') }}</label>
         <input
           v-model="form.email"
-          class="form-control form-input form-input-bordered w-full"
-          :class="{ 'form-input-border-error': form.errors.has('email') }"
+          class="form-control form-input form-control-bordered w-full"
+          :class="{ 'form-control-bordered-error': form.errors.has('email') }"
           id="email"
           type="email"
           name="email"
@@ -30,23 +30,27 @@
         </HelpText>
       </div>
 
-      <LoadingButton
+      <Button
         class="w-full flex justify-center"
         type="submit"
-        :disabled="form.processing"
         :loading="form.processing"
       >
         {{ __('Send Password Reset Link') }}
-      </LoadingButton>
+      </Button>
     </form>
   </LoadingView>
 </template>
 
 <script>
 import Auth from '@/layouts/Auth'
+import { Button } from 'laravel-nova-ui'
 
 export default {
   layout: Auth,
+
+  components: {
+    Button,
+  },
 
   data: () => ({
     form: Nova.form({

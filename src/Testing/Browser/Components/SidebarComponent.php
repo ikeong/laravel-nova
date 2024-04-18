@@ -57,7 +57,7 @@ class SidebarComponent extends Component
     public function elements()
     {
         return [
-            '@current-active-link' => '> div.sidebar-section div.sidebar-item a.inertia-link-active',
+            '@current-active-link' => 'a[data-active-link=true]',
         ];
     }
 }

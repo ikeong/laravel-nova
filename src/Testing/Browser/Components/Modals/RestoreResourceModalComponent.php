@@ -9,7 +9,6 @@ class RestoreResourceModalComponent extends ModalComponent
     /**
      * Modal confirmation button.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function confirm(Browser $browser)
@@ -20,7 +19,6 @@ class RestoreResourceModalComponent extends ModalComponent
     /**
      * Modal cancelation button.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function cancel(Browser $browser)

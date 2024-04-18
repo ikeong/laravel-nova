@@ -1,5 +1,7 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+  <div
+    class="relative overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow"
+  >
     <slot />
   </div>
 </template>

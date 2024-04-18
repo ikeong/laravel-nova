@@ -1,24 +1,19 @@
 <template>
-  <div>
-    <ActionDropdown
-      class="mt-1 md:mt-0 md:ml-2 md:mr-2"
-      v-if="resource"
-      :resource="resource"
-      :actions="actions"
-      :via-resource="viaResource"
-      :via-resource-id="viaResourceId"
-      :via-relationship="viaRelationship"
-      :resource-name="resourceName"
-      @actionExecuted="$emit('actionExecuted')"
-      :selected-resources="[resource.id.value]"
-      :trigger-dusk-attribute="`${resource.id.value}-control-selector`"
-    >
-      <template #sr-only>
-        <span class="sr-only">{{ __('Actions') }}</span>
-      </template>
-
+  <ActionDropdown
+    v-if="resource"
+    :resource="resource"
+    :actions="actions"
+    :via-resource="viaResource"
+    :via-resource-id="viaResourceId"
+    :via-relationship="viaRelationship"
+    :resource-name="resourceName"
+    @actionExecuted="$emit('actionExecuted')"
+    :selected-resources="[resource.id.value]"
+    :trigger-dusk-attribute="`${resource.id.value}-control-selector`"
+    :show-headings="true"
+  >
+    <template #menu>
       <div
-        class="py-1"
         v-if="
           resource.authorizedToReplicate ||
           (currentUser.canImpersonate && resource.authorizedToImpersonate) ||
@@ -27,93 +22,94 @@
           resource.authorizedToForceDelete
         "
       >
-        <!-- Replicate Resource Link -->
-        <DropdownMenuItem
-          v-if="resource.authorizedToReplicate"
-          :dusk="`${resource.id.value}-replicate-button`"
-          :href="
-            $url(`/resources/${resourceName}/${resource.id.value}/replicate`, {
-              viaResource,
-              viaResourceId,
-              viaRelationship,
-            })
-          "
-          :title="__('Replicate')"
-        >
-          {{ __('Replicate') }}
-        </DropdownMenuItem>
+        <DropdownMenuHeading>{{ __('Actions') }}</DropdownMenuHeading>
+        <div class="py-1">
+          <!-- Replicate Resource Link -->
+          <DropdownMenuItem
+            v-if="resource.authorizedToReplicate"
+            :dusk="`${resource.id.value}-replicate-button`"
+            :href="
+              $url(
+                `/resources/${resourceName}/${resource.id.value}/replicate`,
+                {
+                  viaResource,
+                  viaResourceId,
+                  viaRelationship,
+                }
+              )
+            "
+            :title="__('Replicate')"
+          >
+            {{ __('Replicate') }}
+          </DropdownMenuItem>
 
-        <!-- Impersonate Resource Button -->
-        <DropdownMenuItem
-          as="button"
-          v-if="currentUser.canImpersonate && resource.authorizedToImpersonate"
-          :dusk="`${resource.id.value}-impersonate-button`"
-          @click.prevent="
-            startImpersonating({
-              resource: resourceName,
-              resourceId: resource.id.value,
-            })
-          "
-          :title="__('Impersonate')"
-        >
-          {{ __('Impersonate') }}
-        </DropdownMenuItem>
+          <!-- Impersonate Resource Button -->
+          <DropdownMenuItem
+            as="button"
+            v-if="
+              currentUser.canImpersonate && resource.authorizedToImpersonate
+            "
+            :dusk="`${resource.id.value}-impersonate-button`"
+            @click.prevent="
+              startImpersonating({
+                resource: resourceName,
+                resourceId: resource.id.value,
+              })
+            "
+            :title="__('Impersonate')"
+          >
+            {{ __('Impersonate') }}
+          </DropdownMenuItem>
 
-        <DropdownMenuItem
-          v-if="resource.authorizedToDelete && !resource.softDeleted"
-          data-testid="open-delete-modal"
-          dusk="open-delete-modal-button"
-          @click.prevent="openDeleteModal"
-          :destructive="true"
-        >
-          {{ __('Delete Resource') }}
-        </DropdownMenuItem>
+          <DropdownMenuItem
+            v-if="resource.authorizedToDelete && !resource.softDeleted"
+            dusk="open-delete-modal-button"
+            @click.prevent="openDeleteModal"
+          >
+            {{ __('Delete Resource') }}
+          </DropdownMenuItem>
 
-        <DropdownMenuItem
-          as="button"
-          v-if="resource.authorizedToRestore && resource.softDeleted"
-          class="block text-sm text-left w-full px-3 py-1 font-semibold text-red-400 hover:text-red-300 focus:text-red-600 focus:outline-none focus:ring ring-inset"
-          data-testid="open-restore-modal"
-          dusk="open-restore-modal-button"
-          @click.prevent="openRestoreModal"
-        >
-          {{ __('Restore Resource') }}
-        </DropdownMenuItem>
+          <DropdownMenuItem
+            as="button"
+            v-if="resource.authorizedToRestore && resource.softDeleted"
+            dusk="open-restore-modal-button"
+            @click.prevent="openRestoreModal"
+          >
+            {{ __('Restore Resource') }}
+          </DropdownMenuItem>
 
-        <DropdownMenuItem
-          as="button"
-          v-if="resource.authorizedToForceDelete"
-          class="block text-sm text-left w-full px-3 py-1 font-semibold text-red-400 hover:text-red-300 focus:text-red-600 focus:outline-none focus:ring ring-inset"
-          data-testid="open-force-delete-modal"
-          dusk="open-force-delete-modal-button"
-          @click.prevent="openForceDeleteModal"
-          :destructive="true"
-        >
-          {{ __('Force Delete Resource') }}
-        </DropdownMenuItem>
+          <DropdownMenuItem
+            as="button"
+            v-if="resource.authorizedToForceDelete"
+            dusk="open-force-delete-modal-button"
+            @click.prevent="openForceDeleteModal"
+          >
+            {{ __('Force Delete Resource') }}
+          </DropdownMenuItem>
+        </div>
       </div>
-    </ActionDropdown>
+    </template>
+  </ActionDropdown>
 
-    <DeleteResourceModal
-      :show="deleteModalOpen"
-      mode="delete"
-      @close="closeDeleteModal"
-      @confirm="confirmDelete"
-    />
+  <DeleteResourceModal
+    :show="deleteModalOpen"
+    mode="delete"
+    @close="closeDeleteModal"
+    @confirm="confirmDelete"
+  />
 
-    <RestoreResourceModal
-      :show="restoreModalOpen"
-      @close="closeRestoreModal"
-      @confirm="confirmRestore"
-    />
+  <RestoreResourceModal
+    :show="restoreModalOpen"
+    @close="closeRestoreModal"
+    @confirm="confirmRestore"
+  />
 
-    <DeleteResourceModal
-      :show="forceDeleteModalOpen"
-      mode="force delete"
-      @close="closeForceDeleteModal"
-      @confirm="confirmForceDelete"
-    />
-  </div>
+  <DeleteResourceModal
+    :show="forceDeleteModalOpen"
+    mode="force delete"
+    @close="closeForceDeleteModal"
+    @confirm="confirmForceDelete"
+  />
 </template>
 
 <script>

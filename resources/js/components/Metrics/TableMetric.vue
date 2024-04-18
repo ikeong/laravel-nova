@@ -6,7 +6,10 @@
     </div>
 
     <div class="mb-5 pb-4">
-      <div class="overflow-hidden overflow-x-auto relative">
+      <div
+        v-if="value.length > 0"
+        class="overflow-hidden overflow-x-auto relative"
+      >
         <table class="w-full table-default">
           <tbody
             class="border-t border-b border-gray-100 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700"
@@ -14,6 +17,11 @@
             <MetricTableRow v-for="row in value" :row="row" />
           </tbody>
         </table>
+      </div>
+      <div v-else class="flex flex-col items-center justify-between px-6 gap-2">
+        <p class="font-normal text-center py-4">
+          {{ card.emptyText }}
+        </p>
       </div>
     </div>
   </LoadingCard>

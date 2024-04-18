@@ -3,6 +3,7 @@
 namespace Laravel\Nova\Fields;
 
 use Illuminate\Contracts\Validation\InvokableRule;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Laravel\Nova\Http\Requests\NovaRequest;
@@ -23,27 +24,27 @@ trait HandlesValidation
     /**
      * The validation rules for creation and updates.
      *
-     * @var array|\Stringable|string|callable
+     * @var (callable(\Laravel\Nova\Http\Requests\NovaRequest):(array|\Stringable|string|callable))|array|\Stringable|string
      *
-     * @phpstan-var TValidationRules
+     * @phpstan-var (callable(\Laravel\Nova\Http\Requests\NovaRequest):TValidationRules)|TValidationRules
      */
     public $rules = [];
 
     /**
      * The validation rules for creation.
      *
-     * @var array|\Stringable|string|callable
+     * @var (callable(\Laravel\Nova\Http\Requests\NovaRequest):(array|\Stringable|string|callable))|array|\Stringable|string
      *
-     * @phpstan-var TValidationRules
+     * @phpstan-var (callable(\Laravel\Nova\Http\Requests\NovaRequest):TValidationRules)|TValidationRules
      */
     public $creationRules = [];
 
     /**
      * The validation rules for updates.
      *
-     * @var array|\Stringable|string|callable
+     * @var (callable(\Laravel\Nova\Http\Requests\NovaRequest):(array|\Stringable|string|callable))|array|\Stringable|string
      *
-     * @phpstan-var TValidationRules
+     * @phpstan-var (callable(\Laravel\Nova\Http\Requests\NovaRequest):TValidationRules)|TValidationRules
      */
     public $updateRules = [];
 
@@ -62,6 +63,7 @@ trait HandlesValidation
         $this->rules = (
             $rules instanceof Rule ||
             $rules instanceof InvokableRule ||
+            $rules instanceof ValidationRule ||
             is_string($rules) ||
             count($parameters) > 1
         ) ? $parameters : $rules;
@@ -119,6 +121,7 @@ trait HandlesValidation
         $this->creationRules = (
             $rules instanceof Rule ||
             $rules instanceof InvokableRule ||
+            $rules instanceof ValidationRule ||
             is_string($rules) ||
             count($parameters) > 1
         ) ? $parameters : $rules;
@@ -161,6 +164,7 @@ trait HandlesValidation
         $this->updateRules = (
             $rules instanceof Rule ||
             $rules instanceof InvokableRule ||
+            $rules instanceof ValidationRule ||
             is_string($rules) ||
             count($parameters) > 1
         ) ? $parameters : $rules;

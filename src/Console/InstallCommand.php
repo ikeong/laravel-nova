@@ -3,8 +3,12 @@
 namespace Laravel\Nova\Console;
 
 use Illuminate\Console\Command;
+use Illuminate\Foundation\Configuration\ApplicationBuilder;
+use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'nova:install')]
 class InstallCommand extends Command
 {
     use ResolvesStubPath;
@@ -70,6 +74,12 @@ class InstallCommand extends Command
     protected function installNovaServiceProvider()
     {
         $namespace = Str::replaceLast('\\', '', $this->laravel->getNamespace());
+
+        if (class_exists(ApplicationBuilder::class) && is_file(base_path('bootstrap/providers.php'))) {
+            ServiceProvider::addProviderToBootstrapFile("{$namespace}\\Providers\\NovaServiceProvider");
+
+            return;
+        }
 
         $appConfig = file_get_contents(config_path('app.php'));
 

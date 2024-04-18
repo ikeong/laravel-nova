@@ -51,9 +51,15 @@ class NovaServiceProvider extends ServiceProvider
             __DIR__.'/../resources/lang' => lang_path('vendor/nova'),
         ], 'nova-lang');
 
-        $this->publishes([
-            __DIR__.'/../database/migrations' => database_path('migrations'),
-        ], 'nova-migrations');
+        if (method_exists($this, 'publishesMigrations')) {
+            $this->publishesMigrations([
+                __DIR__.'/../database/migrations' => database_path('migrations'),
+            ], Nova::runsMigrations() ? 'nova-migrations' : null);
+        } else {
+            $this->publishes([
+                __DIR__.'/../database/migrations' => database_path('migrations'),
+            ], 'nova-migrations');
+        }
     }
 
     /**

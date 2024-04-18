@@ -117,7 +117,7 @@ class Attach extends Page
     {
         $browser->dismissToasted()
             ->click('@attach-button')
-            ->pause(750);
+            ->pause(1000);
     }
 
     /**

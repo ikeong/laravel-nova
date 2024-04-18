@@ -11,7 +11,8 @@ use Illuminate\Support\Str;
 #[\AllowDynamicProperties]
 class ResourceTool extends Panel
 {
-    use Makeable, ProxiesCanSeeToGate;
+    use Makeable;
+    use ProxiesCanSeeToGate;
 
     /**
      * The resource tool element.

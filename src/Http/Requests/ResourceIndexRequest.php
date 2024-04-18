@@ -6,7 +6,8 @@ use Laravel\Nova\Contracts\QueryBuilder;
 
 class ResourceIndexRequest extends NovaRequest
 {
-    use CountsResources, QueriesResources;
+    use CountsResources;
+    use QueriesResources;
 
     /**
      * Get the paginator instance for the index request.

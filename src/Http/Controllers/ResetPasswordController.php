@@ -13,7 +13,6 @@ use Laravel\Nova\Nova;
 
 class ResetPasswordController extends Controller
 {
-    use ValidatesRequests;
     /*
     |--------------------------------------------------------------------------
     | Password Reset Controller
@@ -26,6 +25,7 @@ class ResetPasswordController extends Controller
     */
 
     use ResetsPasswords;
+    use ValidatesRequests;
 
     /**
      * Create a new controller instance.

@@ -8,7 +8,8 @@ use Laravel\Nova\Testing\Browser\Concerns\InteractsWithInlineCreateRelation;
 
 trait InteractsWithRelations
 {
-    use HasSearchable, InteractsWithInlineCreateRelation;
+    use HasSearchable;
+    use InteractsWithInlineCreateRelation;
 
     /**
      * Select for the given value for a relationship attribute.

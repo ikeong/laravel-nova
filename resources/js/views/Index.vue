@@ -18,6 +18,7 @@
       :level="1"
       class="mb-3 flex items-center"
       :class="{ 'mt-6': shouldShowCards && cards.length > 0 }"
+      dusk="index-heading"
     >
       <span v-html="headingTitle" />
       <button
@@ -32,14 +33,10 @@
     </Heading>
 
     <template v-if="!shouldBeCollapsed">
-      <div class="flex mb-6">
+      <div class="flex gap-2 mb-6">
         <IndexSearchInput
-          v-if="
-            resourceInformation && resourceInformation.searchable && !viaHasOne
-          "
-          :searchable="
-            resourceInformation && resourceInformation.searchable && !viaHasOne
-          "
+          v-if="resourceInformation && resourceInformation.searchable"
+          :searchable="resourceInformation && resourceInformation.searchable"
           v-model:keyword="search"
           @update:keyword="search = $event"
         />
@@ -50,12 +47,12 @@
             authorizedToCreate ||
             authorizedToRelate
           "
-          class="inline-flex items-center space-x-2 ml-auto"
+          class="inline-flex items-center gap-2 ml-auto"
         >
           <!-- Action Dropdown -->
           <ActionDropdown
             v-if="availableStandaloneActions.length > 0"
-            @actionExecuted="() => fetchPolicies()"
+            @actionExecuted="handleActionExecuted"
             :resource-name="resourceName"
             :via-resource="viaResource"
             :via-resource-id="viaResourceId"
@@ -75,9 +72,9 @@
             :via-resource-id="viaResourceId"
             :via-relationship="viaRelationship"
             :relationship-type="relationshipType"
-            :authorized-to-create="authorizedToCreate && !resourceIsFull"
+            :authorized-to-create="authorizedToCreate"
             :authorized-to-relate="authorizedToRelate"
-            class="flex-shrink-0"
+            class="shrink-0"
           />
         </div>
       </div>
@@ -114,6 +111,7 @@
           :has-filters="hasFilters"
           :have-standalone-actions="haveStandaloneActions"
           :lenses="lenses"
+          :loading="resourceResponse && loading"
           :per-page-options="perPageOptions"
           :per-page="perPage"
           :pivot-actions="pivotActions"
@@ -130,7 +128,7 @@
             selectedResourcesForActionSelector
           "
           :should-show-action-selector="shouldShowActionSelector"
-          :should-show-check-boxes="shouldShowCheckBoxes"
+          :should-show-checkboxes="shouldShowCheckboxes"
           :should-show-delete-menu="shouldShowDeleteMenu"
           :should-show-polling-toggle="shouldShowPollingToggle"
           :soft-deletes="softDeletes"
@@ -138,16 +136,19 @@
           @stop-polling="stopPolling"
           :toggle-select-all-matching="toggleSelectAllMatching"
           :toggle-select-all="toggleSelectAll"
+          :toggle-polling="togglePolling"
           :trashed-changed="trashedChanged"
           :trashed-parameter="trashedParameter"
           :trashed="trashed"
           :update-per-page-changed="updatePerPageChanged"
-          :via-has-one="viaHasOne"
           :via-many-to-many="viaManyToMany"
           :via-resource="viaResource"
         />
 
-        <LoadingView :loading="loading">
+        <LoadingView
+          :loading="loading"
+          :variant="!resourceResponse ? 'default' : 'overlay'"
+        >
           <IndexErrorDialog
             v-if="resourceResponseError != null"
             :resource="resourceInformation"
@@ -156,7 +157,7 @@
 
           <template v-else>
             <IndexEmptyDialog
-              v-if="!resources.length"
+              v-if="!loading && !resources.length"
               :create-button-label="createButtonLabel"
               :singular-name="singularName"
               :resource-name="resourceName"
@@ -176,7 +177,7 @@
               :selected-resources="selectedResources"
               :selected-resource-ids="selectedResourceIds"
               :actions-are-available="allActions.length > 0"
-              :should-show-checkboxes="shouldShowCheckBoxes"
+              :should-show-checkboxes="shouldShowCheckboxes"
               :via-resource="viaResource"
               :via-resource-id="viaResourceId"
               :via-relationship="viaRelationship"
@@ -187,7 +188,7 @@
               @reset-order-by="resetOrderBy"
               @delete="deleteResources"
               @restore="restoreResources"
-              @actionExecuted="getResources"
+              @actionExecuted="handleActionExecuted"
               ref="resourceTable"
             />
 
@@ -281,6 +282,7 @@ export default {
     this.getLenses()
 
     Nova.$on('refresh-resources', this.getResources)
+    Nova.$on('resources-detached', this.getAuthorizationToRelate)
 
     if (this.actionCanceller !== null) this.actionCanceller()
   },
@@ -296,6 +298,7 @@ export default {
     }
 
     Nova.$off('refresh-resources', this.getResources)
+    Nova.$off('resources-detached', this.getAuthorizationToRelate)
 
     if (this.actionCanceller !== null) this.actionCanceller()
   },
@@ -440,7 +443,12 @@ export default {
             viaRelationship: this.viaRelationship,
             relationshipType: this.relationshipType,
             display: 'index',
-            resources: this.selectedResourcesForActionSelector,
+            resources: this.selectAllMatchingChecked
+              ? 'all'
+              : this.selectedResourceIds,
+            pivots: !this.selectAllMatchingChecked
+              ? this.selectedPivotIds
+              : null,
           },
           cancelToken: new CancelToken(canceller => {
             this.actionCanceller = canceller

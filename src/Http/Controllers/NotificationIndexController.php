@@ -17,7 +17,7 @@ class NotificationIndexController extends Controller
     {
         return response()->json([
             'notifications' => $request->notifications(),
-            'unread' => $request->unreadCount() > 0,
+            'unread' => $request->unreadCount(),
         ]);
     }
 }

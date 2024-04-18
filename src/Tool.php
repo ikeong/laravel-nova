@@ -6,9 +6,9 @@ use Illuminate\Http\Request;
 
 abstract class Tool
 {
-    use AuthorizedToSee,
-        Makeable,
-        ProxiesCanSeeToGate;
+    use AuthorizedToSee;
+    use Makeable;
+    use ProxiesCanSeeToGate;
 
     /**
      * Create a new Tool.

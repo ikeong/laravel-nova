@@ -1,5 +1,7 @@
 import { usePage } from '@inertiajs/inertia-vue3'
 import { Inertia } from '@inertiajs/inertia'
+import forEach from 'lodash/forEach'
+import filled from '@/util/filled'
 
 export default {
   state: () => ({
@@ -15,6 +17,8 @@ export default {
     canLeaveModal: true,
     pushStateWasTriggered: false,
     validLicense: true,
+    queryStringParams: {},
+    compiledQueryStringParams: '',
   }),
 
   getters: {
@@ -28,6 +32,7 @@ export default {
     canLeaveFormToPreviousPage: s => s.canLeaveForm && !s.pushStateWasTriggered,
     canLeaveModal: s => s.canLeaveModal,
     validLicense: s => s.validLicense,
+    queryStringParams: s => s.queryStringParams,
   },
 
   mutations: {
@@ -117,7 +122,7 @@ export default {
       Nova.visit('/')
     },
 
-    async assignPropsFromInertia({ state }) {
+    async assignPropsFromInertia({ state, dispatch }) {
       let config = usePage().props.value.novaConfig || Nova.appConfig
       let { resources, base, version, mainMenu, userMenu } = config
 
@@ -134,10 +139,53 @@ export default {
       state.version = version
       state.mainMenu = mainMenu
       state.userMenu = userMenu
+
+      dispatch('syncQueryString')
     },
 
     async fetchPolicies({ state, dispatch }) {
       await dispatch('assignPropsFromInertia')
+    },
+
+    async syncQueryString({ state }) {
+      let searchParams = new URLSearchParams(window.location.search)
+
+      state.queryStringParams = Object.fromEntries(searchParams.entries())
+      state.compiledQueryStringParams = searchParams.toString()
+    },
+
+    async updateQueryString({ state }, value) {
+      let searchParams = new URLSearchParams(window.location.search)
+      let page = Inertia.page
+
+      forEach(value, (v, i) => {
+        if (!filled(v)) {
+          searchParams.delete(i)
+        } else {
+          searchParams.set(i, v || '')
+        }
+      })
+
+      if (state.compiledQueryStringParams !== searchParams.toString()) {
+        if (page.url !== `${window.location.pathname}?${searchParams}`) {
+          page.url = `${window.location.pathname}?${searchParams}`
+
+          window.history.pushState(
+            page,
+            '',
+            `${window.location.pathname}?${searchParams}`
+          )
+        }
+
+        state.compiledQueryStringParams = searchParams.toString()
+      }
+
+      Nova.$emit('query-string-changed', searchParams)
+      state.queryStringParams = Object.fromEntries(searchParams.entries())
+
+      return new Promise((resolve, reject) => {
+        resolve(searchParams)
+      })
     },
   },
 }

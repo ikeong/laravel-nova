@@ -34,14 +34,26 @@ use ReflectionClass;
  *
  * @method $this canSee(\Closure $callback)
  */
+#[\AllowDynamicProperties]
 class Action implements JsonSerializable
 {
-    use AuthorizedToSee,
-        Macroable,
-        Makeable,
-        Metable,
-        ProxiesCanSeeToGate,
-        Tappable;
+    use AuthorizedToSee;
+    use Macroable;
+    use Makeable;
+    use Metable;
+    use ProxiesCanSeeToGate;
+    use Tappable;
+
+    public const FULLSCREEN_STYLE = 'fullscreen';
+
+    public const WINDOW_STYLE = 'window';
+
+    /**
+     * The number of models that should be included in each chunk.
+     *
+     * @var int
+     */
+    public static $chunkCount = 200;
 
     /**
      * The displayable name of the action.
@@ -135,13 +147,6 @@ class Action implements JsonSerializable
     public $thenCallback;
 
     /**
-     * The number of models that should be included in each chunk.
-     *
-     * @var int
-     */
-    public static $chunkCount = 200;
-
-    /**
      * The text to be used for the action's confirm button.
      *
      * @var string
@@ -197,9 +202,12 @@ class Action implements JsonSerializable
      */
     public $modalStyle = 'window';
 
-    public const FULLSCREEN_STYLE = 'fullscreen';
-
-    public const WINDOW_STYLE = 'window';
+    /**
+     * Indicates if the action is authorized to run.
+     *
+     * @var bool|null
+     */
+    public $authorizedToRunAction = null;
 
     /**
      * The closure used to handle the action.
@@ -223,15 +231,29 @@ class Action implements JsonSerializable
     }
 
     /**
-     * Determine if the action is executable for the given request.
+     * Set the Closure used to handle the action.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return bool
+     * @param  \Closure(\Laravel\Nova\Fields\ActionFields, \Illuminate\Support\Collection):(mixed)  $callback
+     * @return $this
      */
-    public function authorizedToRun(Request $request, $model)
+    public function handleUsing(Closure $callback)
     {
-        return $this->runCallback ? call_user_func($this->runCallback, $request, $model) : true;
+        $this->handleCallback = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Set the name for the action.
+     *
+     * @param  string  $name
+     * @return $this
+     */
+    public function withName($name)
+    {
+        $this->name = $name;
+
+        return $this;
     }
 
     /**
@@ -243,27 +265,6 @@ class Action implements JsonSerializable
     public static function message($message)
     {
         return ActionResponse::message($message);
-    }
-
-    /**
-     * Return a dangerous message response from the action.
-     *
-     * @param  string  $name
-     * @param  string|null  $message
-     * @return static|\Laravel\Nova\Actions\ActionResponse
-     */
-    public static function danger($name, string $message = null)
-    {
-        if (\func_num_args() === 2) {
-            return (new static)
-                ->withName($name)
-                ->noop()
-                ->then(function () use ($message) {
-                    return ActionResponse::danger($message);
-                });
-        }
-
-        return ActionResponse::danger($name);
     }
 
     /**
@@ -307,18 +308,28 @@ class Action implements JsonSerializable
     }
 
     /**
-     * Return a Inertia visit from the action.
+     * Register a callback that should be invoked after the action is finished executing.
      *
-     * @deprecated Use "visit"
-     *
-     * @param  string  $name
-     * @param  (\Closure():(string))|(\Closure(\Illuminate\Database\Eloquent\Model):(string))|string|array<string, mixed>  $path
-     * @param  array<string, mixed>  $options
-     * @return static|\Laravel\Nova\Actions\ActionResponse
+     * @param  callable(\Illuminate\Support\Collection):mixed  $callback
+     * @return $this
      */
-    public static function push($name, $path, $options = [])
+    public function then($callback)
     {
-        return self::visit($name, $path, $options);
+        $this->thenCallback = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Set the Action to be a no-op.
+     *
+     * @return $this
+     */
+    public function noop()
+    {
+        return $this->handleUsing(function () {
+            return null;
+        });
     }
 
     /**
@@ -328,28 +339,46 @@ class Action implements JsonSerializable
      * @param  (\Closure():(string))|(\Closure(\Illuminate\Database\Eloquent\Model):(string))|string|array<string, mixed>  $path
      * @param  array<string, mixed>  $options
      * @return static|\Laravel\Nova\Actions\ActionResponse
+     *
+     * @deprecated Use "visit"
+     */
+    public static function push($name, $path, $options = [])
+    {
+        return self::visit($name, $path, $options);
+    }
+
+    /**
+     * Return a Inertia visit from the action.
+     *
+     * @template TVisit of string|\Laravel\Nova\URL
+     * @template TQueryString of array<string, mixed>
+     *
+     * @param  TVisit  $name
+     * @param  (\Closure():(TVisit))|(\Closure(\Illuminate\Database\Eloquent\Model):(TVisit))|TVisit|TQueryString  $path
+     * @param  TQueryString  $options
+     * @return static|\Laravel\Nova\Actions\ActionResponse
      */
     public static function visit($name, $path = [], $options = [])
     {
-        if (\func_num_args() === 3) {
-            return (new static)
-                ->withName($name)
-                ->noop()
-                ->tap(function ($action) use ($path, $options) {
-                    $action->handleUsing(function ($fields, $models) use ($action, $path, $options) {
-                        if ($action->sole === true) {
-                            return ActionResponse::visit(value($path, $models->first()), $options);
-                        }
-
-                        return ActionResponse::visit(value($path), $options);
-                    });
-                })
-                ->then(function ($response) {
-                    return $response->first();
-                });
+        if (\func_num_args() <= 2 && is_array($path)) {
+            return ActionResponse::visit($name, $path);
         }
 
-        return ActionResponse::visit($name, $path);
+        return (new static)
+            ->withName($name)
+            ->noop()
+            ->tap(function ($action) use ($path, $options) {
+                $action->handleUsing(function ($fields, $models) use ($action, $path, $options) {
+                    if ($action->sole === true) {
+                        return ActionResponse::visit(value($path, $models->first()), $options);
+                    }
+
+                    return ActionResponse::visit(value($path), $options);
+                });
+            })
+            ->then(function ($response) {
+                return $response->first();
+            });
     }
 
     /**
@@ -385,47 +414,41 @@ class Action implements JsonSerializable
     /**
      * Return a download response from the action.
      *
-     * @deprecated Use "downloadURL"
-     *
-     * @param  string  $name
-     * @param  string  $url
-     * @return static|\Laravel\Nova\Actions\ActionResponse
-     */
-    public static function download($url, $name)
-    {
-        return ActionResponse::download($name, $url);
-    }
-
-    /**
-     * Return a download response from the action.
-     *
      * @param  string  $name
      * @param  (\Closure():(string))|(\Closure(\Illuminate\Database\Eloquent\Model):(string))|string  $url
      * @return static|\Laravel\Nova\Actions\ActionResponse
      */
     public static function downloadURL($name, $url)
     {
-        if (\func_num_args() === 2) {
-            return (new static)
-                ->withName($name)
-                ->noop()
-                ->tap(function ($action) use ($name, $url) {
-                    $action->handleUsing(function ($fields, $models) use ($action, $name, $url) {
-                        if ($action->sole === true) {
-                            return ActionResponse::download($name, value($url, $models->first()));
-                        }
+        return (new static)
+            ->withName($name)
+            ->noop()
+            ->tap(function ($action) use ($name, $url) {
+                $action->handleUsing(function ($fields, $models) use ($action, $name, $url) {
+                    if ($action->sole === true) {
+                        return ActionResponse::download($name, value($url, $models->first()));
+                    }
 
-                        return ActionResponse::download($name, value($url));
-                    });
-                })
-                ->then(function ($response) {
-                    return $response->first();
+                    return ActionResponse::download($name, value($url));
                 });
-        }
+            })
+            ->then(function ($response) {
+                return $response->first();
+            });
+    }
 
-        // We have to support the old method of calling this action
-        // where the parameters are passed in the opposite order.
-        return self::download($url, $name);
+    /**
+     * Return a download response from the action.
+     *
+     * @param  string  $name
+     * @param  string  $url
+     * @return static|\Laravel\Nova\Actions\ActionResponse
+     *
+     * @deprecated Use "Action::downloadUrl()"
+     */
+    public static function download($url, $name)
+    {
+        return ActionResponse::download($name, $url);
     }
 
     /**
@@ -460,28 +483,15 @@ class Action implements JsonSerializable
     }
 
     /**
-     * Set the Closure used to handle the action.
+     * Determine if the action is executable for the given request.
      *
-     * @param  \Closure(\Laravel\Nova\Fields\ActionFields, \Illuminate\Support\Collection):(mixed)  $callback
-     * @return $this
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @return bool
      */
-    public function handleUsing(Closure $callback)
+    public function authorizedToRun(Request $request, $model)
     {
-        $this->handleCallback = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Set the Action to be a no-op.
-     *
-     * @return $this
-     */
-    public function noop()
-    {
-        return $this->handleUsing(function () {
-            return null;
-        });
+        return $this->authorizedToRunAction = value($this->runCallback ?? true, $request, $model);
     }
 
     /**
@@ -494,10 +504,31 @@ class Action implements JsonSerializable
         $this->standalone = false;
         $this->sole = true;
 
-        return $this->canSee(function (NovaRequest $request) {
-            return ! $request->allResourcesSelected() && $request->selectedResourceIds()->count() === 1;
-        })->showInline()
-        ->showOnDetail();
+        return $this->showInline()->showOnDetail();
+    }
+
+    /**
+     * Show the action on the detail view.
+     *
+     * @return $this
+     */
+    public function showOnDetail()
+    {
+        $this->showOnDetail = true;
+
+        return $this;
+    }
+
+    /**
+     * Show the action on the table row.
+     *
+     * @return $this
+     */
+    public function showInline()
+    {
+        $this->showInline = true;
+
+        return $this;
     }
 
     /**
@@ -556,6 +587,27 @@ class Action implements JsonSerializable
     }
 
     /**
+     * Return a dangerous message response from the action.
+     *
+     * @param  string  $name
+     * @param  string|null  $message
+     * @return static|\Laravel\Nova\Actions\ActionResponse
+     */
+    public static function danger($name, string $message = null)
+    {
+        if (\func_num_args() === 2) {
+            return (new static)
+                ->withName($name)
+                ->noop()
+                ->then(function () use ($message) {
+                    return ActionResponse::danger($message);
+                });
+        }
+
+        return ActionResponse::danger($name);
+    }
+
+    /**
      * Handle chunk results.
      *
      * @param  \Laravel\Nova\Fields\ActionFields  $fields
@@ -565,56 +617,6 @@ class Action implements JsonSerializable
     public function handleResult(ActionFields $fields, $results)
     {
         return count($results) ? end($results) : null;
-    }
-
-    /**
-     * Handle any post-validation processing.
-     *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
-     * @param  \Illuminate\Contracts\Validation\Validator  $validator
-     * @return void
-     */
-    protected function afterValidation(NovaRequest $request, $validator)
-    {
-        //
-    }
-
-    /**
-     * Mark the action event record for the model as finished.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return int
-     */
-    protected function markAsFinished($model)
-    {
-        return $this->actionBatchId ? Nova::usingActionEvent(function ($actionEvent) use ($model) {
-            $actionEvent->markAsFinished($this->actionBatchId, $model);
-        }) : 0;
-    }
-
-    /**
-     * Mark the action event record for the model as failed.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @param  \Throwable|string  $e
-     * @return int
-     */
-    protected function markAsFailed($model, $e = null)
-    {
-        return $this->actionBatchId ? Nova::usingActionEvent(function ($actionEvent) use ($model, $e) {
-            $actionEvent->markAsFailed($this->actionBatchId, $model, $e);
-        }) : 0;
-    }
-
-    /**
-     * Get the fields available on the action.
-     *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
-     * @return array
-     */
-    public function fields(NovaRequest $request)
-    {
-        return [];
     }
 
     /**
@@ -628,10 +630,10 @@ class Action implements JsonSerializable
     public function validateFields(ActionRequest $request)
     {
         $fields = FieldCollection::make($this->fields($request))
-                    ->authorized($request)
-                    ->applyDependsOn($request)
-                    ->withoutReadonly($request)
-                    ->withoutUnfillable();
+            ->authorized($request)
+            ->applyDependsOn($request)
+            ->withoutReadonly($request)
+            ->withoutUnfillable();
 
         return Validator::make(
             $request->all(),
@@ -647,6 +649,29 @@ class Action implements JsonSerializable
         )->after(function ($validator) use ($request) {
             $this->afterValidation($request, $validator);
         })->validate();
+    }
+
+    /**
+     * Get the fields available on the action.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @return array
+     */
+    public function fields(NovaRequest $request)
+    {
+        return [];
+    }
+
+    /**
+     * Handle any post-validation processing.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  \Illuminate\Contracts\Validation\Validator  $validator
+     * @return void
+     */
+    protected function afterValidation(NovaRequest $request, $validator)
+    {
+        //
     }
 
     /**
@@ -772,52 +797,15 @@ class Action implements JsonSerializable
     }
 
     /**
-     * Show the action on the detail view.
-     *
-     * @return $this
-     */
-    public function showOnDetail()
-    {
-        $this->showOnDetail = true;
-
-        return $this;
-    }
-
-    /**
      * Show the action on the table row.
      *
-     * @deprecated Use "showInline"
-     *
      * @return $this
+     *
+     * @deprecated Use "showInline"
      */
     public function showOnTableRow()
     {
         return $this->showInline();
-    }
-
-    /**
-     * Show the action on the table row.
-     *
-     * @return $this
-     */
-    public function showInline()
-    {
-        $this->showInline = true;
-
-        return $this;
-    }
-
-    /**
-     * Register a callback that should be invoked after the action is finished executing.
-     *
-     * @param  callable(\Illuminate\Support\Collection):mixed  $callback
-     * @return $this
-     */
-    public function then($callback)
-    {
-        $this->thenCallback = $callback;
-
-        return $this;
     }
 
     /**
@@ -859,29 +847,6 @@ class Action implements JsonSerializable
     }
 
     /**
-     * Get the component name for the action.
-     *
-     * @return string
-     */
-    public function component()
-    {
-        return $this->component;
-    }
-
-    /**
-     * Set the name for the action.
-     *
-     * @param  string  $name
-     * @return $this
-     */
-    public function withName($name)
-    {
-        $this->name = $name;
-
-        return $this;
-    }
-
-    /**
      * Set the URI key for the action.
      *
      * @param  string  $uriKey
@@ -892,26 +857,6 @@ class Action implements JsonSerializable
         $this->uriKey = $uriKey;
 
         return $this;
-    }
-
-    /**
-     * Get the displayable name of the action.
-     *
-     * @return string
-     */
-    public function name()
-    {
-        return $this->name ?: Nova::humanize($this);
-    }
-
-    /**
-     * Get the URI key for the action.
-     *
-     * @return string
-     */
-    public function uriKey()
-    {
-        return $this->uriKey ?? Str::slug($this->name(), '-', null);
     }
 
     /**
@@ -936,52 +881,6 @@ class Action implements JsonSerializable
         $this->withoutActionEvents = true;
 
         return $this;
-    }
-
-    /**
-     * Determine if the action is to be shown on the index view.
-     *
-     * @return bool
-     */
-    public function shownOnIndex()
-    {
-        if ($this->onlyOnIndex == true) {
-            return true;
-        }
-
-        if ($this->onlyOnDetail) {
-            return false;
-        }
-
-        return $this->showOnIndex;
-    }
-
-    /**
-     * Determine if the action is to be shown on the detail view.
-     *
-     * @return bool
-     */
-    public function shownOnDetail()
-    {
-        if ($this->onlyOnDetail) {
-            return true;
-        }
-
-        if ($this->onlyOnIndex) {
-            return false;
-        }
-
-        return $this->showOnDetail;
-    }
-
-    /**
-     * Determine if the action is to be shown inline on the table row.
-     *
-     * @return bool
-     */
-    public function shownOnTableRow()
-    {
-        return $this->showInline;
     }
 
     /**
@@ -1037,16 +936,6 @@ class Action implements JsonSerializable
     }
 
     /**
-     * Determine if the action is a standalone action.
-     *
-     * @return bool
-     */
-    public function isStandalone()
-    {
-        return $this->standalone;
-    }
-
-    /**
      * Set the modal to fullscreen style.
      *
      * @return $this
@@ -1087,6 +976,7 @@ class Action implements JsonSerializable
             'confirmButtonText' => Nova::__($this->confirmButtonText),
             'confirmText' => Nova::__($this->confirmText),
             'destructive' => $this instanceof DestructiveAction,
+            'authorizedToRun' => $this->authorizedToRunAction,
             'name' => $this->name(),
             'uriKey' => $this->uriKey(),
             'fields' => FieldCollection::make($this->fields($request))
@@ -1107,6 +997,92 @@ class Action implements JsonSerializable
     }
 
     /**
+     * Get the component name for the action.
+     *
+     * @return string
+     */
+    public function component()
+    {
+        return $this->component;
+    }
+
+    /**
+     * Get the displayable name of the action.
+     *
+     * @return string
+     */
+    public function name()
+    {
+        return $this->name ?: Nova::humanize($this);
+    }
+
+    /**
+     * Get the URI key for the action.
+     *
+     * @return string
+     */
+    public function uriKey()
+    {
+        return $this->uriKey ?? Str::slug($this->name(), '-', null);
+    }
+
+    /**
+     * Determine if the action is to be shown on the detail view.
+     *
+     * @return bool
+     */
+    public function shownOnDetail()
+    {
+        if ($this->onlyOnDetail) {
+            return true;
+        }
+
+        if ($this->onlyOnIndex) {
+            return false;
+        }
+
+        return $this->showOnDetail;
+    }
+
+    /**
+     * Determine if the action is to be shown on the index view.
+     *
+     * @return bool
+     */
+    public function shownOnIndex()
+    {
+        if ($this->onlyOnIndex == true) {
+            return true;
+        }
+
+        if ($this->onlyOnDetail) {
+            return false;
+        }
+
+        return $this->showOnIndex;
+    }
+
+    /**
+     * Determine if the action is to be shown inline on the table row.
+     *
+     * @return bool
+     */
+    public function shownOnTableRow()
+    {
+        return $this->showInline;
+    }
+
+    /**
+     * Determine if the action is a standalone action.
+     *
+     * @return bool
+     */
+    public function isStandalone()
+    {
+        return $this->standalone;
+    }
+
+    /**
      * Prepare the instance for serialization.
      *
      * @return array
@@ -1116,7 +1092,35 @@ class Action implements JsonSerializable
         $properties = (new ReflectionClass($this))->getProperties();
 
         return array_values(array_filter(array_map(function ($p) {
-            return ($p->isStatic() || in_array($name = $p->getName(), ['runCallback', 'seeCallback', 'thenCallback'])) ? null : $name;
+            return ($p->isStatic() || in_array($name = $p->getName(),
+                ['runCallback', 'seeCallback', 'thenCallback'])) ? null : $name;
         }, $properties)));
+    }
+
+    /**
+     * Mark the action event record for the model as finished.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @return int
+     */
+    protected function markAsFinished($model)
+    {
+        return $this->actionBatchId ? Nova::usingActionEvent(function ($actionEvent) use ($model) {
+            $actionEvent->markAsFinished($this->actionBatchId, $model);
+        }) : 0;
+    }
+
+    /**
+     * Mark the action event record for the model as failed.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @param  \Throwable|string  $e
+     * @return int
+     */
+    protected function markAsFailed($model, $e = null)
+    {
+        return $this->actionBatchId ? Nova::usingActionEvent(function ($actionEvent) use ($model, $e) {
+            $actionEvent->markAsFailed($this->actionBatchId, $model, $e);
+        }) : 0;
     }
 }

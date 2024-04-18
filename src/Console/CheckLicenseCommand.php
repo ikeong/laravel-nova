@@ -5,7 +5,9 @@ namespace Laravel\Nova\Console;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Nova\Nova;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'nova:check-license')]
 class CheckLicenseCommand extends Command
 {
     /**

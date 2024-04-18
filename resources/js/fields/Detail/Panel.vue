@@ -81,7 +81,7 @@ export default {
 
   computed: {
     localStorageKey() {
-      return `nova.panels.${this.panel.name}.collapsed`
+      return `nova.panels.${this.panel.attribute}.collapsed`
     },
 
     collapsedByDefault() {

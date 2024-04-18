@@ -13,15 +13,15 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 /**
  * @method static static make(mixed $name, string|callable|null $attribute = null, string|null $disk = null, callable|null $storageCallback = null)
  */
-class File extends Field implements StorableContract, DeletableContract, DownloadableContract
+class File extends Field implements DeletableContract, DownloadableContract, StorableContract
 {
-    use Storable,
-        Deletable,
-        AcceptsTypes,
-        HasDownload,
-        HasThumbnail,
-        HasPreview,
-        SupportsDependentFields;
+    use AcceptsTypes;
+    use Deletable;
+    use HasDownload;
+    use HasPreview;
+    use HasThumbnail;
+    use Storable;
+    use SupportsDependentFields;
 
     /**
      * The field's component.

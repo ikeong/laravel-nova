@@ -1,10 +1,5 @@
 <template>
-  <form
-    :action="href"
-    method="POST"
-    @submit="handleSubmit"
-    data-testid="form-button"
-  >
+  <form :action="href" method="POST" @submit="handleSubmit" dusk="form-button">
     <input
       v-for="(value, key) in data"
       type="hidden"

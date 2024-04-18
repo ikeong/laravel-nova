@@ -4,7 +4,9 @@ namespace Laravel\Nova\Console;
 
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'nova:asset')]
 class AssetCommand extends ComponentGeneratorCommand
 {
     use RenamesStubs;

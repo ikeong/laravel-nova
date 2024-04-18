@@ -11,7 +11,7 @@ class Badge implements JsonSerializable
     /**
      * The value for the badge.
      *
-     * @var string
+     * @var string|\Closure
      */
     public $value;
 
@@ -75,7 +75,7 @@ class Badge implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'value' => $this->value,
+            'value' => value($this->value),
             'typeClass' => static::$types[$this->type],
         ];
     }

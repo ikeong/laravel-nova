@@ -1,48 +1,24 @@
 <template>
-  <Dropdown
-    v-if="filters.length > 0 || softDeletes || !viaResource"
-    :class="{
-      'bg-primary-500 hover:bg-primary-600 border-primary-500':
-        filtersAreApplied,
-      'dark:bg-primary-500 dark:hover:bg-primary-600 dark:border-primary-500':
-        filtersAreApplied,
-    }"
-    :handle-internal-clicks="false"
-    class="flex h-9 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-    dusk="filter-selector"
-    @menu-opened="handleMenuOpened"
-  >
-    <span class="sr-only">{{ __('Filter Dropdown') }}</span>
-    <DropdownTrigger
-      :class="{
-        'text-white hover:text-white dark:text-gray-800 dark:hover:text-gray-800':
-          filtersAreApplied,
-      }"
-      class="toolbar-button px-2"
-    >
-      <Icon type="filter" />
-
-      <span
-        v-if="filtersAreApplied"
-        :class="{
-          'text-white dark:text-gray-800': filtersAreApplied,
-        }"
-        class="ml-2 font-bold"
-      >
-        {{ activeFilterCount }}
-      </span>
-    </DropdownTrigger>
+  <Dropdown dusk="filter-selector" :should-close-on-blur="false">
+    <Button
+      :variant="filtersAreApplied ? 'solid' : 'ghost'"
+      dusk="filter-selector-button"
+      icon="funnel"
+      trailing-icon="chevron-down"
+      padding="tight"
+      :label="activeFilterCount > 0 ? activeFilterCount : ''"
+      :aria-label="__('Filter Dropdown')"
+    />
 
     <template #menu>
-      <DropdownMenu width="260">
+      <DropdownMenu width="260" dusk="filter-menu">
         <ScrollWrap :height="350" class="bg-white dark:bg-gray-900">
           <div
-            ref="theForm"
             class="divide-y divide-gray-200 dark:divide-gray-800 divide-solid"
           >
             <div v-if="filtersAreApplied" class="bg-gray-100">
               <button
-                class="py-2 w-full block text-xs uppercase tracking-wide text-center text-gray-500 dark:bg-gray-800 dark:hover:bg-gray-700 font-bold focus:outline-none"
+                class="py-2 w-full block text-xs uppercase tracking-wide text-center text-gray-500 dark:bg-gray-800 dark:hover:bg-gray-700 font-bold focus:outline-none focus:text-primary-500"
                 @click="handleClearSelectedFiltersClick"
               >
                 {{ __('Reset Filters') }}
@@ -50,14 +26,16 @@
             </div>
 
             <!-- Custom Filters -->
-            <div v-for="filter in filters" :key="filter.name">
+            <div
+              v-for="(filter, index) in filters"
+              :key="`${filter.class}-${index}`"
+            >
               <component
                 :is="filter.component"
                 :filter-key="filter.class"
                 :lens="lens"
                 :resource-name="resourceName"
-                @change="$emit('filter-changed')"
-                @input="$emit('filter-changed')"
+                @change="handleFilterChanged"
               />
             </div>
 
@@ -103,8 +81,11 @@
 
 <script>
 import map from 'lodash/map'
+import { Button } from 'laravel-nova-ui'
 
 export default {
+  components: { Button },
+
   emits: [
     'filter-changed',
     'clear-selected-filters',
@@ -113,43 +94,44 @@ export default {
   ],
 
   props: {
-    resourceName: String,
-    lens: {
-      type: String,
-      default: '',
-    },
-    viaResource: String,
-    viaHasOne: Boolean,
-    softDeletes: Boolean,
-    trashed: {
-      type: String,
-      validator: value => ['', 'with', 'only'].indexOf(value) != -1,
-    },
+    activeFilterCount: Number,
+    filters: Array,
+    filtersAreApplied: Boolean,
+    lens: { type: String, default: '' },
     perPage: [String, Number],
     perPageOptions: Array,
+    resourceName: String,
+    softDeletes: Boolean,
+    trashed: { type: String, validator: v => ['', 'with', 'only'].includes(v) },
+    viaResource: String,
   },
 
   methods: {
+    handleFilterChanged(v) {
+      // Older filters generated with our stubs will not have a value, since they committed to the store directly
+      // instead of emitting a change event with the `filterKey` and `value`. We need to handle both cases.
+      if (v) {
+        const { filterClass, value } = v
+
+        if (filterClass) {
+          Nova.log(`Updating filter state ${filterClass}: ${value}`)
+
+          this.$store.commit(`${this.resourceName}/updateFilterState`, {
+            filterClass,
+            value,
+          })
+        }
+      }
+
+      this.$emit('filter-changed')
+    },
+
     handleClearSelectedFiltersClick() {
       Nova.$emit('clear-filter-values')
 
       setTimeout(() => {
         this.$emit('clear-selected-filters')
       }, 500)
-    },
-
-    handleMenuOpened() {
-      this.$nextTick(() => {
-        let formFields = this.$refs.theForm.querySelectorAll(
-          'input, textarea, select'
-        )
-
-        if (formFields.length > 0) {
-          formFields[0].focus({
-            preventScroll: true,
-          })
-        }
-      })
     },
   },
 
@@ -174,27 +156,6 @@ export default {
       get() {
         return this.perPage
       },
-    },
-
-    /**
-     * Return the filters from state
-     */
-    filters() {
-      return this.$store.getters[`${this.resourceName}/filters`]
-    },
-
-    /**
-     * Determine via state whether filters are applied
-     */
-    filtersAreApplied() {
-      return this.$store.getters[`${this.resourceName}/filtersAreApplied`]
-    },
-
-    /**
-     * Return the number of active filters
-     */
-    activeFilterCount() {
-      return this.$store.getters[`${this.resourceName}/activeFilterCount`]
     },
 
     /**

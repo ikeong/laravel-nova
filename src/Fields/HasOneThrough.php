@@ -12,7 +12,7 @@ use Laravel\Nova\Panel;
 /**
  * @method static static make(mixed $name, string|null $attribute = null, string|null $resource = null)
  */
-class HasOneThrough extends Field implements RelatableField, BehavesAsPanel
+class HasOneThrough extends Field implements BehavesAsPanel, RelatableField
 {
     /**
      * The field's component.
@@ -92,7 +92,7 @@ class HasOneThrough extends Field implements RelatableField, BehavesAsPanel
         $this->alreadyFilledWhen(function ($request) {
             $parentResource = Nova::resourceForKey($request->viaResource);
 
-            if ($parentResource && $request->viaResourceId) {
+            if ($parentResource && filled($request->viaResourceId)) {
                 $parent = $parentResource::newModel()->find($request->viaResourceId);
 
                 return optional($parent->{$this->attribute})->exists === true;

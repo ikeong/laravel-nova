@@ -1,12 +1,9 @@
 <template>
   <div :class="`text-${field.textAlign}`">
     <Dropdown v-if="field.value.length > 0">
-      <DropdownTrigger
-        class="text-gray-500 inline-flex items-center cursor-pointer"
-        :showArrow="false"
-      >
-        <span class="link-default font-bold">{{ __('View') }}</span>
-      </DropdownTrigger>
+      <Button variant="link">
+        {{ __('View') }}
+      </Button>
 
       <template #menu>
         <DropdownMenu width="auto">
@@ -34,7 +31,13 @@
 </template>
 
 <script>
+import { Button } from 'laravel-nova-ui'
+
 export default {
+  components: {
+    Button,
+  },
+
   props: ['index', 'resource', 'resourceName', 'resourceId', 'field'],
 }
 </script>

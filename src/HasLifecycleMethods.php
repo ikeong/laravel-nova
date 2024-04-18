@@ -54,4 +54,16 @@ trait HasLifecycleMethods
     {
         //
     }
+
+    /**
+     * Register a callback to be called after the resource is restored.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @return void
+     */
+    public static function afterRestore(NovaRequest $request, Model $model)
+    {
+        //
+    }
 }

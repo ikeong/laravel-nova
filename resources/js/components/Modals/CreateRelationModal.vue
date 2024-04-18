@@ -4,19 +4,21 @@
     :show="show"
     @close-via-escape="handlePreventModalAbandonmentOnClose"
     :size="size"
+    :use-focus-trap="!loading"
   >
     <div
       class="bg-gray-100 dark:bg-gray-700 rounded-lg shadow-lg overflow-hidden p-8"
     >
       <CreateResource
-        mode="modal"
-        @refresh="handleRefresh"
-        @create-cancelled="handleCreateCancelled"
         :resource-name="resourceName"
+        @create-cancelled="handleCreateCancelled"
+        @finished-loading="() => (loading = false)"
+        @refresh="handleRefresh"
+        mode="modal"
         resource-id=""
-        via-resource=""
-        via-resource-id=""
         via-relationship=""
+        via-resource-id=""
+        via-resource=""
       />
     </div>
   </Modal>
@@ -45,6 +47,10 @@ export default {
     viaRelationship: {},
   },
 
+  data: () => ({
+    loading: true,
+  }),
+
   methods: {
     handleRefresh(data) {
       this.$emit('set-resource', data)
@@ -57,7 +63,7 @@ export default {
     handlePreventModalAbandonmentOnClose(event) {
       this.handlePreventModalAbandonment(
         () => {
-          this.$emit('create-cancelled')
+          this.handleCreateCancelled()
         },
         () => {
           event.stopPropagation()

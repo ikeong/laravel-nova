@@ -23,9 +23,9 @@
     >
       <div class="flex items-center space-x-4">
         <p class="text-center pointer-events-none">
-          <DefaultButton component="div">
+          <Button as="div">
             {{ __('Choose a file') }}
-          </DefaultButton>
+          </Button>
         </p>
 
         <p
@@ -45,6 +45,7 @@
 <script setup>
 import { useLocalization } from '@/composables/useLocalization'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
+import { Button } from 'laravel-nova-ui'
 
 const { __ } = useLocalization()
 

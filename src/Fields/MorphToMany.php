@@ -19,14 +19,14 @@ use Laravel\Nova\TrashedStatus;
  */
 class MorphToMany extends Field implements DeletableContract, ListableField, PivotableField, RelatableField
 {
-    use AttachableRelation,
-        Deletable,
-        DetachesPivotModels,
-        DeterminesIfCreateRelationCanBeShown,
-        FormatsRelatableDisplayValues,
-        ManyToManyCreationRules,
-        Searchable,
-        Collapsable;
+    use AttachableRelation;
+    use Collapsable;
+    use Deletable;
+    use DetachesPivotModels;
+    use DeterminesIfCreateRelationCanBeShown;
+    use FormatsRelatableDisplayValues;
+    use ManyToManyCreationRules;
+    use Searchable;
 
     /**
      * The field's component.
@@ -256,7 +256,7 @@ class MorphToMany extends Field implements DeletableContract, ListableField, Piv
         return array_filter([
             'avatar' => $resource->resolveAvatarUrl($request),
             'display' => $this->formatDisplayValue($resource),
-            'value' => $resource->getKey(),
+            'value' => optional(ID::forResource($resource))->value ?? $resource->getKey(),
             'subtitle' => $resource->subtitle(),
         ]);
     }

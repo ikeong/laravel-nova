@@ -6,7 +6,8 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 
 class Color extends Field
 {
-    use HasSuggestions, SupportsDependentFields;
+    use HasSuggestions;
+    use SupportsDependentFields;
 
     /**
      * The field's component.

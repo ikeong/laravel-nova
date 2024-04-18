@@ -6,7 +6,7 @@
           `${filter.name} - ${__('From')}`
         }}</span>
         <input
-          class="flex w-full form-control form-input form-input-bordered"
+          class="flex w-full form-control form-input form-control-bordered"
           ref="startField"
           v-model="startValue"
           :dusk="`${field.uniqueKey}-range-start`"
@@ -19,7 +19,7 @@
           `${filter.name} - ${__('To')}`
         }}</span>
         <input
-          class="flex w-full form-control form-input form-input-bordered"
+          class="flex w-full form-control form-input form-control-bordered"
           ref="endField"
           v-model="endValue"
           :dusk="`${field.uniqueKey}-range-end`"
@@ -102,12 +102,10 @@ export default {
     },
 
     handleChange() {
-      this.$store.commit(`${this.resourceName}/updateFilterState`, {
+      this.$emit('change', {
         filterClass: this.filterKey,
         value: this.validateFilter(this.startValue, this.endValue),
       })
-
-      this.$emit('change')
     },
 
     handleFilterReset() {

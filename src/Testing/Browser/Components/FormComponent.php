@@ -31,18 +31,18 @@ class FormComponent extends Component
      */
     public function selector()
     {
-        return $this->selector ?? '#app [data-testid="content"] form:not([data-testid="form-button"])';
+        return $this->selector ?? '#app [dusk="content"] form:not([dusk="form-button"])';
     }
 
     /**
-     * Set field value using JavaScript.
+     * Set a field's value using JavaScript.
      *
      * @param  \Laravel\Dusk\Browser  $browser
      * @param  string  $attribute
      * @param  mixed  $value
      * @return void
      */
-    public function fieldValue(Browser $browser, $attribute, $value)
+    public function setFieldValue(Browser $browser, $attribute, $value)
     {
         $browser->script("Nova.\$emit('{$this->formUniqueId}-{$attribute}-value', '{$value}')");
     }
@@ -58,7 +58,7 @@ class FormComponent extends Component
     public function assert(Browser $browser)
     {
         tap($this->selector(), function ($selector) use ($browser) {
-            $browser->pause(500)
+            $browser->pause(100)
                 ->waitFor($selector)
                 ->assertVisible($selector)
                 ->scrollIntoView($selector);

@@ -55,7 +55,7 @@ trait DependentFields
         $this->applyDependsOn($request);
 
         $value = with($this->value, function ($value) use ($request) {
-            if (UndefinedValue::equalsTo($value) && $this->requestShouldResolveDefaultValue($request)) {
+            if ($value instanceof UndefinedValue && $this->requestShouldResolveDefaultValue($request)) {
                 $this->value = null;
 
                 return $this->resolveDefaultValue($request);
@@ -65,7 +65,12 @@ trait DependentFields
         });
 
         $this->dependentShouldEmitChangesEvent = ! $value instanceof UndefinedValue;
-        $this->value = ! $value instanceof UndefinedValue ? $value : null;
+
+        if ($value instanceof UndefinedValue) {
+            $this->value = null;
+        } else {
+            $this->value = ! is_null($value) ? $value : '';
+        }
 
         return $this;
     }

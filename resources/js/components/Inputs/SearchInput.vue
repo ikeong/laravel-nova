@@ -1,70 +1,66 @@
 <template>
-  <div
-    v-bind="$attrs"
-    :data-testid="dataTestid"
-    :dusk="dataTestid"
-    ref="searchInputContainer"
-  >
-    <div class="relative">
-      <div
-        ref="input"
-        @click.stop="open"
-        @focus="open"
-        @keydown.down.prevent="open"
-        @keydown.up.prevent="open"
-        :class="{
-          'ring dark:border-gray-500 dark:ring-gray-700': show,
-          'form-input-border-error': error,
-          'bg-gray-50 dark:bg-gray-700': disabled || readOnly,
-        }"
-        class="relative flex items-center form-control form-input-bordered form-select pr-6"
-        :tabindex="show ? -1 : 0"
-        :aria-expanded="show === true ? 'true' : 'false'"
-        :dusk="`${dataTestid}-selected`"
-      >
-        <IconArrow
-          v-if="shouldShowDropdownArrow && !disabled"
-          class="pointer-events-none form-select-arrow"
-        />
+  <div v-bind="$attrs" class="relative" :dusk="dusk" ref="searchInputContainer">
+    <div
+      ref="input"
+      @click.stop="open"
+      @keydown.space.prevent="open"
+      @keydown.down.prevent="open"
+      @keydown.up.prevent="open"
+      :class="{
+        'ring dark:border-gray-500 dark:ring-gray-700': show,
+        'form-input-border-error': error,
+        'bg-gray-50 dark:bg-gray-700': disabled || readOnly,
+      }"
+      class="relative flex items-center form-control form-input form-control-bordered form-select pr-6"
+      :tabindex="show ? -1 : 0"
+      :aria-expanded="show === true ? 'true' : 'false'"
+      :dusk="`${dusk}-selected`"
+    >
+      <IconArrow
+        v-if="shouldShowDropdownArrow && !disabled"
+        class="pointer-events-none form-select-arrow"
+      />
 
-        <slot name="default">
-          <div class="text-gray-400 dark:text-gray-400">
-            {{ __('Click to choose') }}
-          </div>
-        </slot>
-      </div>
-
-      <button
-        type="button"
-        @click.stop="clear"
-        v-if="!shouldShowDropdownArrow && !disabled"
-        tabindex="-1"
-        class="absolute p-2 inline-block right-[4px]"
-        style="top: 6px"
-        :dusk="`${dataTestid}-clear-button`"
-      >
-        <svg
-          class="block fill-current icon h-2 w-2"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="278.046 126.846 235.908 235.908"
-        >
-          <path
-            d="M506.784 134.017c-9.56-9.56-25.06-9.56-34.62 0L396 210.18l-76.164-76.164c-9.56-9.56-25.06-9.56-34.62 0-9.56 9.56-9.56 25.06 0 34.62L361.38 244.8l-76.164 76.165c-9.56 9.56-9.56 25.06 0 34.62 9.56 9.56 25.06 9.56 34.62 0L396 279.42l76.164 76.165c9.56 9.56 25.06 9.56 34.62 0 9.56-9.56 9.56-25.06 0-34.62L430.62 244.8l76.164-76.163c9.56-9.56 9.56-25.06 0-34.62z"
-          />
-        </svg>
-      </button>
+      <slot name="default">
+        <div class="text-gray-400 dark:text-gray-400">
+          {{ __('Click to choose') }}
+        </div>
+      </slot>
     </div>
 
+    <button
+      type="button"
+      @click="clear"
+      v-if="!shouldShowDropdownArrow && !disabled"
+      tabindex="-1"
+      class="absolute p-2 inline-block right-[4px]"
+      style="top: 6px"
+      :dusk="`${dusk}-clear-button`"
+    >
+      <svg
+        class="block fill-current icon h-2 w-2"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="278.046 126.846 235.908 235.908"
+      >
+        <path
+          d="M506.784 134.017c-9.56-9.56-25.06-9.56-34.62 0L396 210.18l-76.164-76.164c-9.56-9.56-25.06-9.56-34.62 0-9.56 9.56-9.56 25.06 0 34.62L361.38 244.8l-76.164 76.165c-9.56 9.56-9.56 25.06 0 34.62 9.56 9.56 25.06 9.56 34.62 0L396 279.42l76.164 76.165c9.56 9.56 25.06 9.56 34.62 0 9.56-9.56 9.56-25.06 0-34.62L430.62 244.8l76.164-76.163c9.56-9.56 9.56-25.06 0-34.62z"
+        />
+      </svg>
+    </button>
+  </div>
+
+  <teleport to="body">
     <div
       v-if="show"
       ref="dropdown"
       class="rounded-lg px-0 bg-white dark:bg-gray-900 shadow border border-gray-200 dark:border-gray-700 absolute top-0 left-0 my-1 overflow-hidden"
       :style="{ width: inputWidth + 'px', zIndex: 2000 }"
+      :dusk="`${dusk}-dropdown`"
     >
       <!-- Search Input -->
       <input
         :disabled="disabled || readOnly"
-        v-model="search"
+        v-model="searchValue"
         ref="search"
         @keydown.enter.prevent="chooseSelected"
         @keydown.down.prevent="move(1)"
@@ -82,31 +78,35 @@
         class="relative overflow-y-scroll text-sm"
         tabindex="-1"
         style="max-height: 155px"
-        :dusk="`${dataTestid}-results`"
+        :dusk="`${dusk}-results`"
       >
         <div
           v-for="(option, index) in data"
-          :dusk="`${dataTestid}-result-${index}`"
+          :dusk="`${dusk}-result-${index}`"
           :key="getTrackedByKey(option)"
-          :ref="index === selected ? 'selected' : null"
+          :ref="index === selectedOptionIndex ? 'selected' : null"
           @click.stop="choose(option)"
-          class="px-3 py-1.5 cursor-pointer"
+          class="px-3 py-1.5 cursor-pointer z-[50]"
           :class="{
-            'border-t border-gray-100 dark:border-gray-700': index != 0,
+            'border-t border-gray-100 dark:border-gray-700': index !== 0,
             [`search-input-item-${index}`]: true,
-            'hover:bg-gray-100 dark:hover:bg-gray-800': index !== selected,
-            'bg-primary-500 text-white dark:text-gray-900': index === selected,
+            'hover:bg-gray-100 dark:hover:bg-gray-800':
+              index !== selectedOptionIndex,
+            'bg-primary-500 text-white dark:text-gray-900':
+              index === selectedOptionIndex,
           }"
         >
-          <slot name="option" :option="option" :selected="index === selected" />
+          <slot
+            name="option"
+            :option="option"
+            :selected="index === selectedOptionIndex"
+          />
         </div>
       </div>
     </div>
 
-    <teleport to="body">
-      <Backdrop @click="show = !show" :show="show" class="z-[35]" />
-    </teleport>
-  </div>
+    <Backdrop @click="close" :show="show" :style="{ zIndex: 1999 }" />
+  </teleport>
 </template>
 
 <script>
@@ -122,7 +122,10 @@ export default {
   inheritAttrs: false,
 
   props: {
-    dataTestid: {},
+    dusk: {
+      type: String,
+      required: true,
+    },
     disabled: {
       type: Boolean,
       default: false,
@@ -153,15 +156,15 @@ export default {
   data: () => ({
     debouncer: null,
     show: false,
-    search: '',
-    selected: 0,
+    searchValue: '',
+    selectedOptionIndex: 0,
     popper: null,
     inputWidth: null,
   }),
 
   watch: {
-    search(search) {
-      this.selected = 0
+    searchValue(search) {
+      this.selectedOptionIndex = 0
       if (this.$refs.container) {
         this.$refs.container.scrollTop = 0
       } else {
@@ -181,8 +184,10 @@ export default {
           this.trackBy,
           get(this.value, this.trackBy),
         ])
-        if (selected !== -1) this.selected = selected
+        if (selected !== -1) this.selectedOptionIndex = selected
         this.inputWidth = this.$refs.input.offsetWidth
+
+        Nova.$emit('disable-focus-trap')
 
         this.$nextTick(() => {
           this.popper = createPopper(this.$refs.input, this.$refs.dropdown, {
@@ -195,7 +200,10 @@ export default {
           })
         })
       } else {
+        this.$refs.search.blur()
         if (this.popper) this.popper.destroy()
+
+        Nova.$emit('enable-focus-trap')
       }
     },
   },
@@ -206,18 +214,10 @@ export default {
 
   mounted() {
     document.addEventListener('keydown', this.handleEscape)
-
-    if (['modal', 'action-modal'].includes(this.mode)) {
-      document.addEventListener('click', this.handleOutsideClick)
-    }
   },
 
   beforeUnmount() {
     document.removeEventListener('keydown', this.handleEscape)
-
-    if (['modal', 'action-modal'].includes(this.mode)) {
-      document.removeEventListener('click', this.handleOutsideClick)
-    }
   },
 
   methods: {
@@ -235,7 +235,7 @@ export default {
     open() {
       if (!this.disabled && !this.readOnly) {
         this.show = true
-        this.search = ''
+        this.searchValue = ''
         this.$emit('shown')
       }
     },
@@ -247,16 +247,16 @@ export default {
 
     clear() {
       if (!this.disabled) {
-        this.selected = null
+        this.selectedOptionIndex = null
         this.$emit('clear', null)
       }
     },
 
     move(offset) {
-      let newIndex = this.selected + offset
+      let newIndex = this.selectedOptionIndex + offset
 
       if (newIndex >= 0 && newIndex < this.data.length) {
-        this.selected = newIndex
+        this.selectedOptionIndex = newIndex
         this.updateScrollPosition()
       }
     },
@@ -288,36 +288,21 @@ export default {
     chooseSelected(event) {
       if (event.isComposing || event.keyCode === 229) return
 
-      if (this.data[this.selected] !== undefined) {
-        this.$emit('selected', this.data[this.selected])
+      if (this.data[this.selectedOptionIndex] !== undefined) {
+        this.$emit('selected', this.data[this.selectedOptionIndex])
         this.$refs.input.focus()
         this.$nextTick(() => this.close())
       }
     },
 
     choose(option) {
-      this.selected = findIndex(this.data, [
+      this.selectedOptionIndex = findIndex(this.data, [
         this.trackBy,
         get(option, this.trackBy),
       ])
       this.$emit('selected', option)
-      this.$refs.input.focus()
+      this.$refs.input.blur()
       this.$nextTick(() => this.close())
-    },
-
-    /**
-     * Handle closing the dropdown.
-     */
-    handleOutsideClick(e) {
-      if (
-        !(
-          this.$refs.searchInputContainer &&
-          (this.$refs.searchInputContainer == e.target ||
-            this.$refs.searchInputContainer.contains(e.target))
-        )
-      ) {
-        this.close()
-      }
     },
   },
 

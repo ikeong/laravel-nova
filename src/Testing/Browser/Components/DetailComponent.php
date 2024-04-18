@@ -56,9 +56,11 @@ class DetailComponent extends Component
      */
     public function assert(Browser $browser)
     {
-        $browser->pause(500);
-
-        $browser->assertVisible($this->selector());
+        tap($this->selector(), function ($selector) use ($browser) {
+            $browser->pause(100)
+                ->waitFor($selector)
+                ->assertVisible($selector);
+        });
     }
 
     /**

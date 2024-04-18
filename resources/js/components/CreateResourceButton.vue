@@ -2,7 +2,7 @@
   <div v-if="shouldShowButtons">
     <!-- Attach Related Models -->
     <ButtonInertiaLink
-      class="flex-shrink-0"
+      class="shrink-0"
       v-if="shouldShowAttachButton"
       dusk="attach-button"
       :href="
@@ -28,7 +28,7 @@
     <!-- Create Related Models -->
     <ButtonInertiaLink
       v-else-if="shouldShowCreateButton"
-      class="flex-shrink-0 h-9 px-4 focus:outline-none ring-primary-200 dark:ring-gray-600 focus:ring text-white dark:text-gray-800 inline-flex items-center font-bold"
+      class="shrink-0 h-9 px-4 focus:outline-none ring-primary-200 dark:ring-gray-600 focus:ring text-white dark:text-gray-800 inline-flex items-center font-bold"
       dusk="create-button"
       :href="
         $url(`/resources/${resourceName}/new`, {

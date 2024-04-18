@@ -5,11 +5,13 @@ namespace Laravel\Nova\Menu;
 use Illuminate\Support\Traits\Macroable;
 use JsonSerializable;
 use Laravel\Nova\AuthorizedToSee;
+use Laravel\Nova\Exceptions\NovaException;
 use Laravel\Nova\Fields\Collapsable;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Makeable;
 use Laravel\Nova\URL;
 use Laravel\Nova\WithBadge;
+use Laravel\Nova\WithIcon;
 
 /**
  * @method static static make(string $name, array|iterable $items = [], string $icon = 'collection')
@@ -17,10 +19,11 @@ use Laravel\Nova\WithBadge;
 class MenuSection implements JsonSerializable
 {
     use AuthorizedToSee;
+    use Collapsable;
+    use Macroable;
     use Makeable;
     use WithBadge;
-    use Macroable;
-    use Collapsable;
+    use WithIcon;
 
     /**
      * The menu's component.
@@ -44,13 +47,6 @@ class MenuSection implements JsonSerializable
     public $items;
 
     /**
-     * the menu's icon.
-     *
-     * @var string
-     */
-    public $icon;
-
-    /**
      * The menu's path.
      *
      * @var string|null
@@ -68,7 +64,7 @@ class MenuSection implements JsonSerializable
     {
         $this->name = $name;
         $this->items = new MenuCollection($items);
-        $this->icon = $icon;
+        $this->withIcon($icon);
     }
 
     /**
@@ -132,7 +128,10 @@ class MenuSection implements JsonSerializable
     public function path($path)
     {
         $this->path = $path;
-        $this->collapsable = false;
+
+        if ($this->collapsable) {
+            throw new NovaException('Link menu sections cannot also be collapsable.');
+        }
 
         return $this;
     }
@@ -145,7 +144,10 @@ class MenuSection implements JsonSerializable
     public function collapsable()
     {
         $this->collapsable = true;
-        $this->path = null;
+
+        if ($this->path) {
+            throw new NovaException('Link menu sections cannot also be collapsable.');
+        }
 
         return $this;
     }
@@ -174,16 +176,16 @@ class MenuSection implements JsonSerializable
         $url = ! empty($this->path) ? URL::make($this->path) : null;
 
         return [
-            'key' => md5($this->name.'-'.$this->path),
-            'name' => $this->name,
-            'component' => 'menu-section',
-            'items' => $this->items->authorized($request)->withoutEmptyItems()->all(),
-            'collapsable' => $this->collapsable,
-            'collapsedByDefault' => $this->collapsedByDefault,
-            'icon' => $this->icon,
-            'path' => (string) $url,
             'active' => optional($url)->active() ?? false,
             'badge' => $this->resolveBadge(),
+            'collapsable' => $this->collapsable,
+            'collapsedByDefault' => $this->collapsedByDefault,
+            'component' => $this->component,
+            'icon' => $this->icon,
+            'items' => $this->items->authorized($request)->withoutEmptyItems()->all(),
+            'key' => md5($this->name.'-'.$this->path),
+            'name' => $this->name,
+            'path' => (string) $url,
         ];
     }
 }

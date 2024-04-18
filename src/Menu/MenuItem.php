@@ -7,6 +7,9 @@ use Illuminate\Support\Traits\Macroable;
 use InvalidArgumentException;
 use JsonSerializable;
 use Laravel\Nova\AuthorizedToSee;
+use Laravel\Nova\Contracts\Filter as FilterContract;
+use Laravel\Nova\Filters\FilterEncoder;
+use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Makeable;
 use Laravel\Nova\Nova;
 use Laravel\Nova\URL;
@@ -18,9 +21,9 @@ use Laravel\Nova\WithBadge;
 class MenuItem implements JsonSerializable
 {
     use AuthorizedToSee;
+    use Macroable;
     use Makeable;
     use WithBadge;
-    use Macroable;
 
     /**
      * The menu's component.
@@ -86,6 +89,20 @@ class MenuItem implements JsonSerializable
     public $activeMenuCallback;
 
     /**
+     * The filters for the menu item.
+     *
+     * @var \Illuminate\Support\Collection
+     */
+    public $filters;
+
+    /**
+     * The resource class name.
+     *
+     * @var class-string<\Laravel\Nova\Resource>|null
+     */
+    public $resource;
+
+    /**
      * Construct a new Menu Item instance.
      *
      * @param  string  $name
@@ -95,6 +112,7 @@ class MenuItem implements JsonSerializable
     {
         $this->name = $name;
         $this->path = $path;
+        $this->filters = collect();
     }
 
     /**
@@ -105,15 +123,15 @@ class MenuItem implements JsonSerializable
      */
     public static function resource($resourceClass)
     {
-        return static::make(
-            $resourceClass::label()
-        )->path('/resources/'.$resourceClass::uriKey())
-        ->activeWhen(function ($request, $url) {
-            return ! $request->routeIs('nova.pages.lens') ? $url->active() : false;
-        })
-        ->canSee(function ($request) use ($resourceClass) {
-            return $resourceClass::availableForNavigation($request) && $resourceClass::authorizedToViewAny($request);
-        });
+        return static::make($resourceClass::label())
+            ->forResource($resourceClass)
+            ->path('/resources/'.$resourceClass::uriKey())
+            ->activeWhen(function ($request, $url) {
+                return ! $request->routeIs('nova.pages.lens') ? $url->active() : false;
+            })
+            ->canSee(function ($request) use ($resourceClass) {
+                return $resourceClass::availableForNavigation($request) && $resourceClass::authorizedToViewAny($request);
+            });
     }
 
     /**
@@ -132,6 +150,94 @@ class MenuItem implements JsonSerializable
                     return $lens->authorizedToSee($request);
                 });
         });
+    }
+
+    /**
+     * Create a menu item from a resource with a set of filters.
+     *
+     * @param  string  $name
+     * @param  class-string  $resourceClass
+     * @param  \Laravel\Nova\Filters\Filter|null  $filter
+     * @param  mixed|null  $value
+     * @return static
+     */
+    public static function filter($name, $resourceClass, $filter = null, $value = null)
+    {
+        $item = static::make($name)
+            ->forResource($resourceClass);
+
+        if ($filter) {
+            $item->applies($filter, $value);
+        }
+
+        return $item
+            ->activeWhen(function ($request, $url) {
+                return "/{$request->path()}?{$request->getQueryString()}" === (string) $url;
+            })
+            ->canSee(function ($request) use ($resourceClass) {
+                return $resourceClass::availableForNavigation($request) && $resourceClass::authorizedToViewAny($request);
+            });
+    }
+
+    /**
+     * Apply a filter to the menu item.
+     *
+     * @param  \Laravel\Nova\Filters\Filter|string  $filter
+     * @param  mixed  $value
+     * @return $this
+     */
+    public function applies($filter, $value)
+    {
+        // If the filter is an actual filter instance, and not a filter generated from
+        // a `filterable` field, let's ensure the user is authorized to see it.
+        // If not, don't push the filter into the filter's collection.
+        if ($filter instanceof FilterContract && ! $filter->authorizedToSee(app(NovaRequest::class))) {
+            return $this;
+        }
+
+        $this->filters->push([
+            'class' => $filter instanceof FilterContract ? get_class($filter) : $filter,
+            'value' => $value,
+        ]);
+
+        $queryString = $this->queryString();
+
+        $path = '/resources/'.$this->resource::uriKey().'?'.$queryString;
+
+        return $this->path($path);
+    }
+
+    /**
+     * Set the resource to be used for the menu item.
+     *
+     * @param  class-string<\Laravel\Nova\Resource>  $resourceClass
+     * @return $this
+     */
+    protected function forResource($resourceClass)
+    {
+        $this->resource = $resourceClass;
+
+        return $this;
+    }
+
+    /**
+     * Return the query string for a filtered resource menu item.
+     *
+     * @return string
+     */
+    protected function queryString()
+    {
+        return Arr::query([
+            $this->resource::uriKey().'_filter' => $this->encodedFilters(),
+        ]);
+    }
+
+    /**
+     * @return string
+     */
+    public function encodedFilters()
+    {
+        return (new FilterEncoder($this->filters->all()))->encode();
     }
 
     /**
@@ -325,7 +431,7 @@ class MenuItem implements JsonSerializable
     {
         $url = URL::make($this->path, $this->external);
 
-        $activeMenuCallback = $this->activeMenuCallback ?? function ($request, $url) {
+        $activeMenuCallback = $this->activeMenuCallback ?? function ($request, URL $url) {
             return $url->active();
         };
 

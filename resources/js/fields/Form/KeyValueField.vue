@@ -32,21 +32,20 @@
         </div>
       </FormKeyValueTable>
 
-      <div
-        class="mr-11"
-        v-if="
-          !currentlyIsReadonly &&
-          !currentField.readonlyKeys &&
-          currentField.canAddRow
-        "
-      >
-        <InvertedButton
-          class="mt-3"
+      <div class="flex items-center justify-center">
+        <Button
+          v-if="
+            !currentlyIsReadonly &&
+            !currentField.readonlyKeys &&
+            currentField.canAddRow
+          "
           @click="addRowAndSelect"
           :dusk="`${field.attribute}-add-key-value`"
+          leading-icon="plus-circle"
+          variant="link"
         >
           {{ currentField.actionText }}
-        </InvertedButton>
+        </Button>
       </div>
     </template>
   </DefaultField>
@@ -59,6 +58,7 @@ import map from 'lodash/map'
 import reject from 'lodash/reject'
 import tap from 'lodash/tap'
 import { DependentFormField, HandlesValidationErrors } from '@/mixins'
+import { Button } from 'laravel-nova-ui'
 
 function guid() {
   var S4 = function () {
@@ -82,6 +82,10 @@ function guid() {
 
 export default {
   mixins: [HandlesValidationErrors, DependentFormField],
+
+  components: {
+    Button,
+  },
 
   data: () => ({ theData: [] }),
 

@@ -9,8 +9,8 @@ use Laravel\Nova\Menu\MenuItem;
 abstract class Dashboard extends Element implements HasMenu
 {
     use AuthorizedToSee;
-    use Metable;
     use Makeable;
+    use Metable;
     use ProxiesCanSeeToGate;
 
     /**

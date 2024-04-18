@@ -3,11 +3,12 @@
     <MainHeader />
 
     <!-- Content -->
-    <div data-testid="content">
+    <div dusk="content">
       <div
         class="hidden lg:block lg:absolute left-0 bottom-0 lg:top-[56px] lg:bottom-auto w-60 px-3 py-8"
       >
-        <MainMenu data-screen="desktop" />
+        <!-- The Main Menu on desktop gets extra padding to keep the bottom of the sidebar from feeling crowded -->
+        <MainMenu class="pb-24" data-screen="desktop" />
       </div>
 
       <div class="p-4 md:py-8 md:px-12 lg:ml-60 space-y-8">

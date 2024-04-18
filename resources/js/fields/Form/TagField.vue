@@ -7,10 +7,10 @@
   >
     <template #field>
       <div class="space-y-4">
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center">
           <SearchSearchInput
             ref="searchable"
-            :data-testid="`${field.resourceName}-search-input`"
+            :dusk="`${field.resourceName}-search-input`"
             @input="performSearch"
             :error="hasError"
             :debounce="field.debounce"
@@ -21,11 +21,12 @@
             :loading="loading"
             class="w-full"
           >
-            <template #option="{ selected, option }">
+            <template #option="{ dusk, selected, option }">
               <SearchInputResult
                 :option="option"
                 :selected="selected"
                 :with-subtitles="field.withSubtitles"
+                :dusk="dusk"
               />
             </template>
           </SearchSearchInput>

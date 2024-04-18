@@ -114,11 +114,10 @@ class ActionRequest extends NovaRequest
 
         $query = $this->viaRelationship()
                     ? $this->modelsViaRelationship()
-                    : $this->toQueryWithoutScopes();
+                    : $this->toQueryWithoutScopes()->whereKey(explode(',', $this->resources));
 
         return $query->tap(function ($query) {
-            $query->whereKey(explode(',', $this->resources))
-                ->latest($this->model()->getQualifiedKeyName());
+            $query->latest($this->model()->getQualifiedKeyName());
         });
     }
 
@@ -148,11 +147,18 @@ class ActionRequest extends NovaRequest
      */
     protected function modelsViaRelationship()
     {
-        return tap($this->findParentResource(), function ($resource) {
+        $relation = tap($this->findParentResource(), function ($resource) {
             abort_unless($resource->hasRelatableField($this, $this->viaRelationship), 404);
-        })->model()->{$this->viaRelationship}()
-                        ->withoutGlobalScopes()
-                        ->whereIn($this->model()->getQualifiedKeyName(), explode(',', $this->resources));
+        })->model()->{$this->viaRelationship}()->withoutGlobalScopes();
+
+        if (isset($this->pivots) && ! empty($this->pivots)) {
+            /** @var class-string<\Illuminate\Database\Eloquent\Relations\Pivot> $pivotClass */
+            $pivotClass = $relation->getPivotClass();
+
+            $relation->wherePivotIn((new $pivotClass())->getKeyName(), explode(',', $this->pivots));
+        }
+
+        return $relation->whereIn($this->model()->getQualifiedKeyName(), explode(',', $this->resources));
     }
 
     /**

@@ -5,7 +5,7 @@
     :class="{
       'markdown-fullscreen fixed inset-0 z-50 overflow-x-hidden overflow-y-auto':
         isFullScreen,
-      'form-input form-input-bordered px-0 overflow-hidden': !isFullScreen,
+      'form-input form-control-bordered px-0 overflow-hidden': !isFullScreen,
       'outline-none ring ring-primary-100 dark:ring-gray-700': isFocused,
     }"
     @dragenter.prevent="handleOnDragEnter"

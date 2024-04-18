@@ -16,7 +16,10 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 
 class {{ class }} extends DestructiveAction implements ShouldQueue
 {
-    use Batchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Batchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * Perform the action on the given models.

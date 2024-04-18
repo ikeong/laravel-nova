@@ -3,7 +3,7 @@
     class="flex flex-col md:flex-row md:items-center"
     :class="{
       'py-3 border-b border-gray-200 dark:border-gray-700':
-        shouldShowCheckBoxes ||
+        shouldShowCheckboxes ||
         shouldShowDeleteMenu ||
         softDeletes ||
         !viaResource ||
@@ -14,7 +14,7 @@
     <div class="flex items-center flex-1">
       <div class="md:ml-3">
         <SelectAllDropdown
-          v-if="shouldShowCheckBoxes"
+          v-if="shouldShowCheckboxes"
           :all-matching-resource-count="allMatchingResourceCount"
           :current-page-count="currentPageCount"
           @toggle-select-all="toggleSelectAll"
@@ -43,33 +43,37 @@
         </div>
 
         <!-- Resource Polling -->
-        <ResourcePollingButton
+        <Button
+          @click="togglePolling"
           v-if="shouldShowPollingToggle"
-          :currently-polling="currentlyPolling"
-          @start-polling="$emit('start-polling')"
-          @stop-polling="$emit('stop-polling')"
+          icon="clock"
+          variant="link"
+          :state="currentlyPolling ? 'default' : 'mellow'"
         />
 
         <!-- Lenses -->
         <LensSelector
-          v-if="lenses"
+          v-if="lenses?.length > 0"
           :resource-name="resourceName"
           :lenses="lenses"
         />
 
         <!-- Filters -->
         <FilterMenu
+          v-if="filters.length > 0 || softDeletes || !viaResource"
+          :active-filter-count="activeFilterCount"
+          :filters-are-applied="filtersAreApplied"
+          :filters="filters"
+          :per-page-options="filterPerPageOptions"
+          :per-page="perPage"
           :resource-name="resourceName"
           :soft-deletes="softDeletes"
-          :via-resource="viaResource"
-          :via-has-one="viaHasOne"
           :trashed="trashed"
-          :per-page="perPage"
-          :per-page-options="filterPerPageOptions"
+          :via-resource="viaResource"
           @clear-selected-filters="clearSelectedFilters(lens || null)"
           @filter-changed="filterChanged"
-          @trashed-changed="trashedChanged"
           @per-page-changed="updatePerPageChanged"
+          @trashed-changed="trashedChanged"
         />
 
         <DeleteMenu
@@ -131,7 +135,11 @@
 </template>
 
 <script>
+import { Button } from 'laravel-nova-ui'
+
 export default {
+  components: { Button },
+
   emits: ['start-polling', 'stop-polling', 'deselect'],
 
   props: [
@@ -174,22 +182,43 @@ export default {
     'selectedResources',
     'selectedResourcesForActionSelector',
     'shouldShowActionSelector',
-    'shouldShowCheckBoxes',
+    'shouldShowCheckboxes',
     'shouldShowDeleteMenu',
     'shouldShowPollingToggle',
     'softDeletes',
     'toggleSelectAll',
     'toggleSelectAllMatching',
+    'togglePolling',
     'trashed',
     'trashedChanged',
     'trashedParameter',
     'updatePerPageChanged',
-    'viaHasOne',
     'viaManyToMany',
     'viaResource',
   ],
 
   computed: {
+    /**
+     * Return the filters from state
+     */
+    filters() {
+      return this.$store.getters[`${this.resourceName}/filters`]
+    },
+
+    /**
+     * Determine via state whether filters are applied
+     */
+    filtersAreApplied() {
+      return this.$store.getters[`${this.resourceName}/filtersAreApplied`]
+    },
+
+    /**
+     * Return the number of active filters
+     */
+    activeFilterCount() {
+      return this.$store.getters[`${this.resourceName}/activeFilterCount`]
+    },
+
     filterPerPageOptions() {
       if (this.resourceInformation) {
         return this.perPageOptions || this.resourceInformation.perPageOptions

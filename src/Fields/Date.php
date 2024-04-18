@@ -14,7 +14,8 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 
 class Date extends Field implements FilterableField
 {
-    use FieldFilterable, SupportsDependentFields;
+    use FieldFilterable;
+    use SupportsDependentFields;
 
     /**
      * The field's component.
@@ -58,8 +59,8 @@ class Date extends Field implements FilterableField
             if (! is_null($value)) {
                 if ($value instanceof DateTimeInterface) {
                     return $value instanceof CarbonInterface
-                                ? $value->toIso8601String()
-                                : $value->format(DateTimeInterface::ATOM);
+                                ? $value->toDateString()
+                                : $value->format('Y-m-d');
                 }
 
                 throw new Exception("Date field must cast to 'date' in Eloquent model.");
@@ -117,18 +118,17 @@ class Date extends Field implements FilterableField
     /**
      * Resolve the default value for the field.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return string|null
      */
-    protected function resolveDefaultValue(NovaRequest $request)
+    public function resolveDefaultValue(NovaRequest $request)
     {
         /** @var \DateTimeInterface|string|null $value */
         $value = parent::resolveDefaultValue($request);
 
         if ($value instanceof DateTimeInterface) {
             return $value instanceof CarbonInterface
-                        ? $value->toIso8601String()
-                        : $value->format(DateTimeInterface::ATOM);
+                        ? $value->toDateString()
+                        : $value->format('Y-m-d');
         }
 
         return $value;
@@ -137,7 +137,6 @@ class Date extends Field implements FilterableField
     /**
      * Make the field filter.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return \Laravel\Nova\Fields\Filters\Filter
      */
     protected function makeFilter(NovaRequest $request)

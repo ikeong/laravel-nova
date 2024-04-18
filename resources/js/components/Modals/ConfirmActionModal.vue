@@ -1,13 +1,11 @@
 <template>
   <Modal
     :show="show"
-    @showing="handleShowingModal"
     @close-via-escape="handlePreventModalAbandonmentOnClose"
-    data-testid="confirm-action-modal"
-    tabindex="-1"
     role="dialog"
     :size="action.modalSize"
     :modal-style="action.modalStyle"
+    :use-focus-trap="usesFocusTrap"
   >
     <form
       ref="theForm"
@@ -60,7 +58,7 @@
                   : 'action-modal'
               "
               :sync-endpoint="syncEndpoint"
-              @field-changed="onUpdateFormStatus"
+              @field-changed="onUpdateFieldStatus"
             />
           </div>
         </div>
@@ -78,16 +76,16 @@
             {{ action.cancelButtonText }}
           </CancelButton>
 
-          <LoadingButton
+          <Button
             type="submit"
             ref="runButton"
             dusk="confirm-action-button"
-            :disabled="working"
             :loading="working"
-            :component="action.destructive ? 'DangerButton' : 'DefaultButton'"
+            variant="solid"
+            :state="action.destructive ? 'danger' : 'default'"
           >
             {{ action.confirmButtonText }}
-          </LoadingButton>
+          </Button>
         </div>
       </ModalFooter>
     </form>
@@ -96,9 +94,15 @@
 
 <script>
 import { PreventsModalAbandonment } from '@/mixins'
+import isObject from 'lodash/isObject'
 import { uid } from 'uid/single'
+import { Button } from 'laravel-nova-ui'
 
 export default {
+  components: {
+    Button,
+  },
+
   emits: ['confirm', 'close'],
 
   mixins: [PreventsModalAbandonment],
@@ -114,11 +118,16 @@ export default {
   },
 
   data: () => ({
+    loading: true,
     formUniqueId: uid(),
   }),
 
   created() {
     document.addEventListener('keydown', this.handleKeydown)
+  },
+
+  mounted() {
+    this.loading = false
   },
 
   beforeUnmount() {
@@ -133,25 +142,8 @@ export default {
       this.updateModalStatus()
     },
 
-    /**
-     * Handle focus when modal being shown.
-     */
-    handleShowingModal(e) {
-      // If the modal has inputs, let's highlight the first one, otherwise
-      // let's highlight the submit button
-      this.$nextTick(() => {
-        if (this.$refs.theForm) {
-          let formFields = this.$refs.theForm.querySelectorAll(
-            'input, textarea, select'
-          )
-
-          formFields.length > 0
-            ? formFields[0].focus()
-            : this.$refs.runButton.focus()
-        } else {
-          this.$refs.runButton.focus()
-        }
-      })
+    onUpdateFieldStatus() {
+      this.onUpdateFormStatus()
     },
 
     handlePreventModalAbandonmentOnClose(event) {
@@ -173,8 +165,11 @@ export default {
       if (this.selectedResources === 'all') {
         searchParams.append('resources', 'all')
       } else {
-        this.selectedResources.forEach(resourceId => {
-          searchParams.append('resources[]', resourceId)
+        this.selectedResources.forEach(resource => {
+          searchParams.append(
+            'resources[]',
+            isObject(resource) ? resource.id.value : resource
+          )
         })
       }
 
@@ -183,6 +178,10 @@ export default {
         '?' +
         searchParams.toString()
       )
+    },
+
+    usesFocusTrap() {
+      return this.loading === false && this.action.fields.length > 0
     },
   },
 }

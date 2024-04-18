@@ -1,48 +1,52 @@
 <template>
   <Dropdown v-if="themeSwitcherEnabled" placement="bottom-end">
-    <DropdownTrigger
-      :show-arrow="false"
-      class="h-10 w-10 hover:text-primary-500"
-    >
-      <Icon :type="themeIcon" :class="themeColor" />
-    </DropdownTrigger>
+    <Button variant="action" :icon="themeIcon" :class="themeColor" />
+
     <template #menu>
-      <DropdownMenu>
-        <div class="flex flex-col py-1">
+      <DropdownMenu width="auto">
+        <nav class="flex flex-col py-1 px-1">
           <DropdownMenuItem
             as="button"
-            @click.prevent="toggleLightTheme"
-            class="flex themeColor-center hover:bg-gray-100 py-1"
+            size="small"
+            class="flex items-center gap-2"
+            @click="toggleLightTheme"
           >
-            <Icon :solid="true" type="sun" />
-            <span class="ml-2">{{ __('Light') }}</span>
+            <Icon name="sun" type="micro" />
+            <span>{{ __('Light') }}</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem
             as="button"
-            @click.prevent="toggleDarkTheme"
-            class="flex items-center hover:bg-gray-100"
+            class="flex items-center gap-2"
+            @click="toggleDarkTheme"
           >
-            <Icon :solid="true" type="moon" />
-            <span class="ml-2">{{ __('Dark') }}</span>
+            <Icon name="moon" type="micro" />
+            <span>{{ __('Dark') }}</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem
             as="button"
-            @click.prevent="toggleSystemTheme"
-            class="flex items-center hover:bg-gray-100"
+            class="flex items-center gap-2"
+            @click="toggleSystemTheme"
           >
-            <Icon :solid="true" type="desktop-computer" />
-            <span class="ml-2">{{ __('System') }}</span>
+            <Icon name="computer-desktop" type="micro" />
+            <span>{{ __('System') }}</span>
           </DropdownMenuItem>
-        </div>
+        </nav>
       </DropdownMenu>
     </template>
   </Dropdown>
 </template>
 
 <script>
+import { Button, Icon } from 'laravel-nova-ui'
+
 export default {
+  components: {
+    Button,
+    Icon,
+  },
+
   data() {
     return {
       theme: 'system',
@@ -58,8 +62,8 @@ export default {
         this.theme = localStorage.novaTheme
       }
 
-      this.listener = e => {
-        if (this.theme == 'system') {
+      this.listener = () => {
+        if (this.theme === 'system') {
           this.applyColorScheme()
         }
       }
@@ -77,17 +81,17 @@ export default {
 
   watch: {
     theme(theme) {
-      if (theme == 'light') {
+      if (theme === 'light') {
         localStorage.novaTheme = 'light'
         document.documentElement.classList.remove('dark')
       }
 
-      if (theme == 'dark') {
+      if (theme === 'dark') {
         localStorage.novaTheme = 'dark'
         document.documentElement.classList.add('dark')
       }
 
-      if (theme == 'system') {
+      if (theme === 'system') {
         localStorage.removeItem('novaTheme')
         this.applyColorScheme()
       }
@@ -96,7 +100,6 @@ export default {
 
   methods: {
     applyColorScheme() {
-      console.log(Nova.config('themeSwitcherEnabled'))
       if (Nova.config('themeSwitcherEnabled')) {
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
           document.documentElement.classList.add('dark')
@@ -125,17 +128,21 @@ export default {
     },
 
     themeIcon() {
+      // if (this.theme === 'system') {
+      //   return 'desktop-computer'
+      // }
+
       return {
         light: 'sun',
         dark: 'moon',
-        system: 'desktop-computer',
+        system: 'computer-desktop',
       }[this.theme]
     },
 
     themeColor() {
       return {
         light: 'text-primary-500',
-        dark: 'text-primary-500',
+        dark: 'dark:text-primary-500',
         system: '',
       }[this.theme]
     },

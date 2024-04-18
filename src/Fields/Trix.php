@@ -9,12 +9,12 @@ use Laravel\Nova\Contracts\Storable as StorableContract;
 use Laravel\Nova\Fields\Filters\TextFilter;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
-class Trix extends Field implements FilterableField, StorableContract, DeletableContract
+class Trix extends Field implements DeletableContract, FilterableField, StorableContract
 {
-    use FieldFilterable,
-        HasAttachments,
-        Expandable,
-        SupportsDependentFields;
+    use Expandable;
+    use FieldFilterable;
+    use HasAttachments;
+    use SupportsDependentFields;
 
     /**
      * The field's component.

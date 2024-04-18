@@ -24,7 +24,7 @@ class NumberFilter extends Filter
     public function apply(NovaRequest $request, $query, $value)
     {
         $value = collect($value)->transform(function ($value) {
-            return ! empty($value) ? $value : null;
+            return ! $this->field->isValidNullValue($value) ? $value : null;
         });
 
         if ($value->filter()->isNotEmpty()) {

@@ -12,8 +12,8 @@ use Laravel\Nova\Nova;
 
 abstract class Metric extends Card
 {
-    use HasHelpText,
-        ResolvesFilters;
+    use HasHelpText;
+    use ResolvesFilters;
 
     /**
      * The displayable name of the metric.

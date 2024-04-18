@@ -1,18 +1,18 @@
 import { Errors } from '@/mixins'
-import { computed, reactive } from 'vue'
+import { computed, nextTick, reactive } from 'vue'
+import each from 'lodash/each'
 import find from 'lodash/find'
 import filter from 'lodash/filter'
 import isNil from 'lodash/isNil'
+import isObject from 'lodash/isObject'
+import map from 'lodash/map'
 import tap from 'lodash/tap'
-import { useQueryParams } from '@/composables/useQueryParams'
-import each from 'lodash/each'
+import trim from 'lodash/trim'
 import { useLocalization } from '@/composables/useLocalization'
 
 const { __ } = useLocalization()
 
 export function useActions(props, emitter, store) {
-  const { params } = useQueryParams()
-
   const state = reactive({
     working: false,
     errors: new Errors(),
@@ -45,7 +45,9 @@ export function useActions(props, emitter, store) {
       : props.resourceName + '_search'
   )
 
-  const currentSearch = computed(() => params[searchParameter.value] || '')
+  const currentSearch = computed(
+    () => store.getters.queryStringParams[searchParameter.value] || ''
+  )
 
   const trashedParameter = computed(() =>
     props.viaRelationship
@@ -53,7 +55,9 @@ export function useActions(props, emitter, store) {
       : props.resourceName + '_trashed'
   )
 
-  const currentTrashed = computed(() => params[trashedParameter.value] || '')
+  const currentTrashed = computed(
+    () => store.getters.queryStringParams[trashedParameter.value] || ''
+  )
 
   const availableActions = computed(() => {
     return filter(
@@ -100,7 +104,30 @@ export function useActions(props, emitter, store) {
 
   const actionFormData = computed(() => {
     return tap(new FormData(), formData => {
-      formData.append('resources', selectedResources.value)
+      if (selectedResources.value === 'all') {
+        formData.append('resources', 'all')
+      } else {
+        let pivotIds = filter(
+          map(selectedResources.value, resource =>
+            isObject(resource) ? resource.id.pivotValue : null
+          )
+        )
+
+        formData.append(
+          'resources',
+          map(selectedResources.value, resource =>
+            isObject(resource) ? resource.id.value : resource
+          )
+        )
+
+        if (
+          selectedResources.value !== 'all' &&
+          selectedActionIsPivotAction.value === true &&
+          pivotIds.length > 0
+        ) {
+          formData.append('pivots', pivotIds)
+        }
+      }
 
       each(selectedAction.value.fields, field => {
         field.fill(formData)
@@ -139,6 +166,14 @@ export function useActions(props, emitter, store) {
     if (typeof callback === 'function') {
       callback()
     }
+  }
+
+  function showActionResponseMessage(data) {
+    if (data.danger) {
+      return Nova.error(data.danger)
+    }
+
+    Nova.success(data.message || __('The action was executed successfully.'))
   }
 
   function executeAction(then) {
@@ -193,56 +228,56 @@ export function useActions(props, emitter, store) {
     }
 
     if (data instanceof Blob) {
-      return emitResponseCallback(() => {
+      return emitResponseCallback(async () => {
         let fileName = 'unknown'
-        let url = window.URL.createObjectURL(new Blob([data]))
-        let link = document.createElement('a')
-        link.href = url
 
         if (contentDisposition) {
-          let fileNameMatch = contentDisposition.match(/filename="(.+)"/)
-          if (fileNameMatch.length === 2) fileName = fileNameMatch[1]
+          let fileNameMatch = contentDisposition
+            .split(';')[1]
+            .match(/filename=(.+)/)
+          if (fileNameMatch.length === 2) fileName = trim(fileNameMatch[1], '"')
         }
 
-        link.setAttribute('download', fileName)
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
-        window.URL.revokeObjectURL(url)
+        await nextTick(() => {
+          let url = window.URL.createObjectURL(new Blob([data]))
+          let link = document.createElement('a')
+
+          link.href = url
+          link.setAttribute('download', fileName)
+          document.body.appendChild(link)
+          link.click()
+          link.remove()
+
+          window.URL.revokeObjectURL(url)
+        })
       })
     }
 
     if (data.modal) {
       state.actionResponseData = data
 
+      showActionResponseMessage(data)
+
       return openResponseModal()
     }
 
-    if (data.message) {
-      return emitResponseCallback(() => Nova.success(data.message))
-    }
-
-    if (data.deleted) {
-      return emitResponseCallback()
-    }
-
     if (data.download) {
-      return emitResponseCallback(() => {
-        let link = document.createElement('a')
-        link.href = data.download
-        link.download = data.name
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+      return emitResponseCallback(async () => {
+        showActionResponseMessage(data)
+
+        await nextTick(() => {
+          let link = document.createElement('a')
+          link.href = data.download
+          link.download = data.name
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+        })
       })
     }
 
     if (data.deleted) {
-      return emitResponseCallback()
-    }
-
-    if (data.danger) {
-      return emitResponseCallback(() => Nova.error(data.danger))
+      return emitResponseCallback(() => showActionResponseMessage(data))
     }
 
     if (data.redirect) {
@@ -250,6 +285,8 @@ export function useActions(props, emitter, store) {
     }
 
     if (data.visit) {
+      showActionResponseMessage(data)
+
       return Nova.visit({
         url: Nova.url(data.visit.path, data.visit.options),
         remote: false,
@@ -262,8 +299,7 @@ export function useActions(props, emitter, store) {
       )
     }
 
-    let message = data.message || __('The action was executed successfully.')
-    return emitResponseCallback(() => Nova.success(message))
+    emitResponseCallback(() => showActionResponseMessage(data))
   }
 
   function handleActionClick(uriKey) {
