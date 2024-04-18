@@ -1,5 +1,5 @@
 <template>
-  <Modal data-testid="restore-resource-modal" :show="show" size="sm">
+  <Modal :show="show" size="sm">
     <form
       @submit.prevent="handleConfirm"
       class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden"
@@ -18,7 +18,6 @@
         <div class="ml-auto">
           <LinkButton
             type="button"
-            data-testid="cancel-button"
             dusk="cancel-restore-button"
             @click.prevent="handleClose"
             class="mr-3"
@@ -26,16 +25,14 @@
             {{ __('Cancel') }}
           </LinkButton>
 
-          <LoadingButton
+          <Button
+            type="submit"
             ref="confirmButton"
             dusk="confirm-restore-button"
-            data-testid="confirm-button"
-            :processing="working"
-            :disabled="working"
-            type="submit"
+            :loading="working"
           >
             {{ __('Restore') }}
-          </LoadingButton>
+          </Button>
         </div>
       </ModalFooter>
     </form>
@@ -43,7 +40,13 @@
 </template>
 
 <script>
+import { Button } from 'laravel-nova-ui'
+
 export default {
+  components: {
+    Button,
+  },
+
   emits: ['confirm', 'close'],
 
   props: {
@@ -54,13 +57,12 @@ export default {
     working: false,
   }),
 
-  /**
-   * Mount the component.
-   */
-  mounted() {
-    this.$nextTick(() => {
-      // this.$refs.confirmButton.focus()
-    })
+  watch: {
+    show(showing) {
+      if (showing === false) {
+        this.working = false
+      }
+    },
   },
 
   methods: {

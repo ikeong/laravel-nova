@@ -12,7 +12,8 @@ use Laravel\Nova\Contracts\RelatableField;
  */
 class LensRequest extends NovaRequest
 {
-    use DecodesFilters, InteractsWithLenses;
+    use DecodesFilters;
+    use InteractsWithLenses;
 
     /**
      * Whether to include the table order prefix.
@@ -122,13 +123,16 @@ class LensRequest extends NovaRequest
             return transform((new $resource($model))->serializeForIndex(
                 $this, $lensResource->resolveFields($this)
             ), function ($payload) use ($model, $lensResource) {
-                $payload['actions'] = collect(array_values($lensResource->actions($this)))
-                        ->filter(function ($action) {
-                            return $action->shownOnIndex() || $action->shownOnTableRow();
-                        })
-                        ->filter->authorizedToSee($this)
-                        ->filter->authorizedToRun($this, $model)
-                        ->values();
+                $hasId = ! is_null($payload['id']->value);
+
+                $payload['actions'] = collect(
+                    $hasId === true ? array_values($lensResource->actions($this)) : []
+                )->filter(function ($action) {
+                    return $action->shownOnIndex() || $action->shownOnTableRow();
+                })
+                ->filter->authorizedToSee($this)
+                ->filter->authorizedToRun($this, $model)
+                ->values();
 
                 return $payload;
             });

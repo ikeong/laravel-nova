@@ -131,7 +131,7 @@ abstract class Partition extends Metric
             $key = (string) $key;
         }
 
-        return [$key => $result->aggregate];
+        return [$key => $result->aggregate ?? 0];
     }
 
     /**

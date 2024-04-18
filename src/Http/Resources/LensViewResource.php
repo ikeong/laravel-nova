@@ -3,7 +3,6 @@
 namespace Laravel\Nova\Http\Resources;
 
 use Illuminate\Database\Eloquent\Builder;
-use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Http\Requests\LensRequest;
 use Laravel\Nova\Query\ApplySoftDeleteConstraint;
 
@@ -33,13 +32,16 @@ class LensViewResource extends Resource
 
         return [
             'name' => $lens->name(),
-            'resources' => $request->toResources($paginator->getCollection()),
+            'resources' => $resources = $request->toResources($paginator->getCollection()),
             'prev_page_url' => $paginator->previousPageUrl(),
             'next_page_url' => $paginator->nextPageUrl(),
             'per_page' => $paginator->perPage(),
             'per_page_options' => $request->resource()::perPageOptions(),
             'softDeletes' => $request->resourceSoftDeletes(),
-            'hasId' => $lens->availableFields($request)->whereInstanceOf(ID::class)->isNotEmpty(),
+            'hasId' => $resources->pluck('id')
+                        ->reject(function ($field) {
+                            return is_null($field->value);
+                        })->isNotEmpty(),
             'polling' => $lens::$polling,
             'pollingInterval' => $lens::$pollingInterval * 1000,
             'showPollingToggle' => $lens::$showPollingToggle,

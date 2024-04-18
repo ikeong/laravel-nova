@@ -49,6 +49,8 @@
 
 <script>
 import { DependentFormField, Errors, HandlesValidationErrors } from '@/mixins'
+import InlineFormData from './InlineFormData'
+
 import Vapor from 'laravel-vapor'
 
 function createFile(file) {
@@ -103,19 +105,8 @@ export default {
 
       if (this.file && this.isVaporField) {
         formData.append(attribute, this.file.name)
-        formData.append('vaporFile[' + attribute + '][key]', this.vaporFile.key)
-        formData.append(
-          'vaporFile[' + attribute + '][uuid]',
-          this.vaporFile.uuid
-        )
-        formData.append(
-          'vaporFile[' + attribute + '][filename]',
-          this.vaporFile.filename
-        )
-        formData.append(
-          'vaporFile[' + attribute + '][extension]',
-          this.vaporFile.extension
-        )
+
+        this.fillVaporFilePayload(formData, attribute)
       }
     }
   },
@@ -203,9 +194,36 @@ export default {
         if (error.response?.status === 422) {
           this.uploadErrors = new Errors(error.response.data.errors)
         }
+      } finally {
+        this.closeRemoveModal()
       }
+    },
 
-      this.closeRemoveModal()
+    fillVaporFilePayload(formData, attribute) {
+      const vaporAttribute =
+        formData instanceof InlineFormData
+          ? formData.slug(attribute)
+          : attribute
+
+      const vaporFormData =
+        formData instanceof InlineFormData ? formData.formData : formData
+
+      vaporFormData.append(
+        `vaporFile[${vaporAttribute}][key]`,
+        this.vaporFile.key
+      )
+      vaporFormData.append(
+        `vaporFile[${vaporAttribute}][uuid]`,
+        this.vaporFile.uuid
+      )
+      vaporFormData.append(
+        `vaporFile[${vaporAttribute}][filename]`,
+        this.vaporFile.filename
+      )
+      vaporFormData.append(
+        `vaporFile[${vaporAttribute}][extension]`,
+        this.vaporFile.extension
+      )
     },
   },
 

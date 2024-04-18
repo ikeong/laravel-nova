@@ -11,7 +11,8 @@ use LogicException;
  */
 class LensResourceDeletionRequest extends NovaRequest
 {
-    use InteractsWithLenses, QueriesResources;
+    use InteractsWithLenses;
+    use QueriesResources;
 
     /**
      * Get the selected models for the action in chunks.
@@ -55,7 +56,7 @@ class LensResourceDeletionRequest extends NovaRequest
      */
     public function toQuery()
     {
-        return tap($this->lens()->query(LensRequest::createFrom($this), $this->newQuery()), function ($query) {
+        return tap($this->lens()->query(LensRequest::createFrom($this), $this->newSearchQuery()), function ($query) {
             if (! $query instanceof Builder) {
                 throw new LogicException('Lens must return an Eloquent query instance in order to perform this action.');
             }

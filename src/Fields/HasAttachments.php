@@ -12,7 +12,8 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 
 trait HasAttachments
 {
-    use Deletable, Storable;
+    use Deletable;
+    use Storable;
 
     /**
      * Indicates if the field should accept files.

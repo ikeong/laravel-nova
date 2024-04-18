@@ -9,7 +9,7 @@
       style="min-height: 300px"
     >
       <svg
-        class="spin fill-80 mb-6"
+        class="animate-spin fill-80 mb-6"
         width="69"
         height="72"
         viewBox="0 0 23 24"

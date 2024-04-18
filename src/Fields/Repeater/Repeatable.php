@@ -15,8 +15,10 @@ class Repeatable implements JsonSerializable
 
     /**
      * The collection of fields for the block.
+     *
+     * @var \Laravel\Nova\Fields\FieldCollection
      */
-    public FieldCollection $fields;
+    public $fields;
 
     /**
      * The associated model class for the block. Only used for HasMany and MorphMany presets.
@@ -40,16 +42,19 @@ class Repeatable implements JsonSerializable
     /**
      * The dataset for repeatable.
      *
-     * @var array
+     * @var \Illuminate\Database\Eloquent\Model|array
      */
     private $data = [];
 
     /**
      * Create a new block instance.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model|array  $data
      */
-    public function __construct(array $data = [])
+    public function __construct($data = [])
     {
         $this->data = $data;
+        $this->fields = new FieldCollection();
     }
 
     /**
@@ -91,11 +96,15 @@ class Repeatable implements JsonSerializable
     {
         return FieldCollection::make($this->fields($request))
             ->withoutMissingValues()
-            ->each(function (Field $field) {
+            ->each(function (Field $field) use ($request) {
                 $field
                     ->compact()
 //                    ->fullWidth()
                     ->resolve($this->data, $field->attribute);
+
+                if (is_null($field->value) && empty($this->data)) {
+                    $field->value = $field->resolveDefaultCallback($request);
+                }
             });
     }
 
@@ -123,8 +132,10 @@ class Repeatable implements JsonSerializable
 
     /**
      * Set the data for the Repeatable.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model|array  $data
      */
-    public function setData(array $data): Repeatable
+    public function setData($data): Repeatable
     {
         $this->data = $data;
 

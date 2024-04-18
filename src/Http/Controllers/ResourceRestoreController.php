@@ -20,6 +20,8 @@ class ResourceRestoreController extends Controller
             $models->each(function ($model) use ($request) {
                 $model->restore();
 
+                $request->resource()::afterRestore($request, $model);
+
                 Nova::usingActionEvent(function ($actionEvent) use ($model, $request) {
                     $actionEvent->insert(
                         $actionEvent->forResourceRestore(Nova::user($request), collect([$model]))

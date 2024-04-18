@@ -1,10 +1,10 @@
 <template>
   <Modal
-    data-testid="preview-resource-modal"
     :show="show"
     @close-via-escape="$emit('close')"
     role="alertdialog"
     size="2xl"
+    :use-focus-trap="false"
   >
     <LoadingView
       :loading="loading"
@@ -55,13 +55,12 @@
 
       <ModalFooter>
         <div class="ml-auto">
-          <DefaultButton
+          <Button
             v-if="resource"
             dusk="confirm-preview-button"
             @click.prevent="$emit('close')"
-          >
-            {{ __('Close') }}
-          </DefaultButton>
+            :label="__('Close')"
+          />
         </div>
       </ModalFooter>
     </LoadingView>
@@ -71,8 +70,13 @@
 <script>
 import { mapProps } from '@/mixins'
 import { minimum } from '@/util'
+import { Button } from 'laravel-nova-ui'
 
 export default {
+  components: {
+    Button,
+  },
+
   emits: ['close'],
 
   props: {

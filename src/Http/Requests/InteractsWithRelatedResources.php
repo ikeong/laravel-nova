@@ -212,7 +212,7 @@ trait InteractsWithRelatedResources
      */
     public function viaRelationship()
     {
-        return $this->viaResource && $this->viaResourceId && $this->viaRelationship;
+        return filled($this->viaResource) && filled($this->viaResourceId) && $this->viaRelationship;
     }
 
     /**

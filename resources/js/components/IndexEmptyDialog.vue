@@ -29,7 +29,7 @@
     <!-- Create / Attach Button -->
     <OutlineButtonInertiaLink
       v-if="shouldShowButton"
-      class="flex-shrink-0"
+      class="shrink-0"
       :href="buttonURL"
       dusk="create-button"
     >

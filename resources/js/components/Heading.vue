@@ -1,5 +1,5 @@
 <template>
-  <component :is="component" :class="classes">
+  <component :is="component" :class="classes" :dusk="dusk">
     <slot />
   </component>
 </template>
@@ -14,6 +14,7 @@ const classes = {
 
 export default {
   props: {
+    dusk: { type: String, default: 'heading' },
     level: {
       default: 1,
       type: Number,

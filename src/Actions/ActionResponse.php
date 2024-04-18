@@ -43,7 +43,7 @@ class ActionResponse implements ArrayAccess, JsonSerializable
     private $redirect;
 
     /**
-     * @var array
+     * @var array{path: string, options: array<string, mixed>}|null
      */
     private $visit;
 
@@ -155,8 +155,8 @@ class ActionResponse implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * @param  string  $path
-     * @param  array  $options
+     * @param  string|\Laravel\Nova\URL  $path
+     * @param  array<string, mixed>  $options
      * @return $this
      */
     public function withVisitOptions($path, $options = [])
@@ -170,8 +170,8 @@ class ActionResponse implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * @param  string  $path
-     * @param  array  $options
+     * @param  string|\Laravel\Nova\URL  $path
+     * @param  array<string, mixed>  $options
      * @return \Laravel\Nova\Actions\ActionResponse
      */
     public static function visit($path, $options = [])

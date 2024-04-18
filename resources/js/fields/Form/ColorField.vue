@@ -8,7 +8,7 @@
     <template #field>
       <input
         v-bind="defaultAttributes"
-        class="bg-white form-control form-input form-input-bordered p-2"
+        class="bg-white form-control form-input form-control-bordered p-2"
         type="color"
         @input="handleChange"
         :value="value"

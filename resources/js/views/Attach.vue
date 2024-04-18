@@ -13,6 +13,7 @@
     <Heading
       class="mb-3"
       v-text="__('Attach :resource', { resource: relatedResourceLabel })"
+      dusk="attach-heading"
     />
 
     <form
@@ -52,7 +53,7 @@
             <div class="flex items-center">
               <SearchInput
                 v-if="field.searchable"
-                :data-testid="`${field.resourceName}-search-input`"
+                :dusk="`${field.resourceName}-search-input`"
                 @input="performSearch"
                 @clear="clearResourceSelection"
                 @selected="selectResource"
@@ -111,11 +112,10 @@
                 v-else
                 class="w-full"
                 :class="{
-                  'form-input-border-error': validationErrors.has(
+                  'form-control-bordered-error': validationErrors.has(
                     field.attribute
                   ),
                 }"
-                :data-testid="field.resourceName"
                 dusk="attachable-select"
                 v-model:selected="selectedResourceId"
                 @change="selectResourceFromSelectControl"
@@ -184,34 +184,34 @@
       <div
         class="flex flex-col md:flex-row md:items-center justify-center md:justify-end space-y-2 md:space-y-0 space-x-3"
       >
-        <CancelButton
+        <Button
           dusk="cancel-attach-button"
-          type="button"
           @click="cancelAttachingResource"
+          :label="__('Cancel')"
+          variant="ghost"
         />
 
-        <LoadingButton
+        <Button
           dusk="attach-and-attach-another-button"
-          type="button"
           @click.native.prevent="attachAndAttachAnother"
           :disabled="isWorking"
-          :processing="submittedViaAttachAndAttachAnother"
+          :loading="submittedViaAttachAndAttachAnother"
         >
           {{ __('Attach & Attach Another') }}
-        </LoadingButton>
+        </Button>
 
-        <LoadingButton
-          dusk="attach-button"
+        <Button
           type="submit"
+          dusk="attach-button"
           :disabled="isWorking"
-          :processing="submittedViaAttachResource"
+          :loading="submittedViaAttachResource"
         >
           {{
             __('Attach :resource', {
               resource: relatedResourceLabel,
             })
           }}
-        </LoadingButton>
+        </Button>
       </div>
     </form>
   </LoadingView>
@@ -229,8 +229,13 @@ import {
   PreventsFormAbandonment,
 } from '@/mixins'
 import { mapActions } from 'vuex'
+import { Button } from 'laravel-nova-ui'
 
 export default {
+  components: {
+    Button,
+  },
+
   mixins: [
     FormEvents,
     HandlesFormRequest,

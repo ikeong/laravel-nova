@@ -4,7 +4,7 @@
 
     <template #filter>
       <input
-        class="w-full form-control form-input form-input-bordered"
+        class="w-full form-control form-input form-control-bordered"
         v-model="value"
         :id="field.uniqueKey"
         :dusk="`${field.uniqueKey}-filter`"
@@ -63,12 +63,10 @@ export default {
     },
 
     handleChange() {
-      this.$store.commit(`${this.resourceName}/updateFilterState`, {
+      this.$emit('change', {
         filterClass: this.filterKey,
         value: this.value,
       })
-
-      this.$emit('change')
     },
   },
 

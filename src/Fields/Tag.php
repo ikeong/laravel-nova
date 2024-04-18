@@ -8,9 +8,9 @@ use Laravel\Nova\Util;
 
 class Tag extends Field
 {
-    use SupportsDependentFields;
     use DeterminesIfCreateRelationCanBeShown;
     use Searchable;
+    use SupportsDependentFields;
 
     const LIST_STYLE = 'list';
 

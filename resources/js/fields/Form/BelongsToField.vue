@@ -6,15 +6,15 @@
     :full-width-content="fullWidthContent"
   >
     <template #field>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center">
         <SearchInput
           v-if="useSearchInput"
-          :data-testid="`${field.resourceName}-search-input`"
+          :dusk="`${field.resourceName}-search-input`"
           :disabled="currentlyIsReadonly"
           @input="performResourceSearch"
           @clear="clearResourceSelection"
           @selected="selectResource"
-          :error="hasError"
+          :has-error="hasError"
           :debounce="currentField.debounce"
           :value="selectedResource"
           :data="filteredResources"
@@ -51,8 +51,7 @@
         <SelectControl
           v-else
           class="w-full"
-          :select-classes="{ 'form-input-border-error': hasError }"
-          :data-testid="field.resourceName"
+          :has-error="hasError"
           :dusk="`${field.resourceName}-select`"
           :disabled="currentlyIsReadonly"
           :options="availableResources"
@@ -108,6 +107,7 @@ import {
   TogglesTrashed,
 } from '@/mixins'
 import filled from '@/util/filled'
+import findIndex from 'lodash/findIndex'
 
 export default {
   mixins: [
@@ -239,7 +239,7 @@ export default {
 
             if (
               isNil(selectedResource) &&
-              !this.shouldIgnoresViaRelatedResource
+              !this.shouldIgnoreViaRelatedResource
             ) {
               return Nova.visit('/404')
             }
@@ -288,13 +288,34 @@ export default {
      * Toggle the trashed state of the search
      */
     toggleWithTrashed() {
-      // Reload the data if the component doesn't have selected resource
-      if (!filled(this.selectedResource)) {
-        this.withTrashed = !this.withTrashed
+      let currentlySelectedResource
+      let currentlySelectedResourceId
 
-        if (!this.useSearchInput) {
-          this.getAvailableResources()
-        }
+      if (filled(this.selectedResource)) {
+        currentlySelectedResource = this.selectedResource
+        currentlySelectedResourceId = this.selectedResource.value
+      }
+
+      this.withTrashed = !this.withTrashed
+
+      this.selectedResource = null
+      this.selectedResourceId = null
+
+      if (!this.useSearchInput) {
+        this.getAvailableResources().then(() => {
+          let index = findIndex(this.availableResources, r => {
+            return r.value === currentlySelectedResourceId
+          })
+
+          if (index > -1) {
+            this.selectedResource = this.availableResources[index]
+            this.selectedResourceId = currentlySelectedResourceId
+          } else {
+            // We didn't find the resource anymore, so let's remove the selection...
+            this.selectedResource = null
+            this.selectedResourceId = null
+          }
+        })
       }
     },
 
@@ -361,6 +382,10 @@ export default {
       }
 
       this.initializeComponent()
+
+      if (isNil(this.syncedField.value) && isNil(this.selectedResourceId)) {
+        this.selectInitialResource()
+      }
     },
 
     emitOnSyncedFieldValueChange() {
@@ -446,7 +471,7 @@ export default {
     shouldLoadFirstResource() {
       return (
         (this.initializingWithExistingResource &&
-          !this.shouldIgnoresViaRelatedResource) ||
+          !this.shouldIgnoreViaRelatedResource) ||
         Boolean(this.currentlyIsReadonly && this.selectedResourceId)
       )
     },
@@ -499,7 +524,7 @@ export default {
       return this.availableResources
     },
 
-    shouldIgnoresViaRelatedResource() {
+    shouldIgnoreViaRelatedResource() {
       return this.viaRelatedResource && filled(this.search)
     },
 

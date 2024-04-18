@@ -181,7 +181,7 @@ class Nova
     /**
      * The initial path Nova should route to when visiting the base.
      *
-     * @var string
+     * @var string|(\Closure(\Illuminate\Http\Request):(string|null))
      */
     public static $initialPath = '/dashboards/main';
 
@@ -226,6 +226,13 @@ class Nova
      * @var bool
      */
     public static $withThemeSwitcher = true;
+
+    /**
+     * Indicates if Nova's notification center should show unread count.
+     *
+     * @var bool
+     */
+    public static $showUnreadCountInNotificationCenter = false;
 
     /**
      * Get the current Nova version.
@@ -1002,6 +1009,9 @@ class Nova
             $userId = Auth::guard(config('nova.guard'))->id() ?? null;
 
             static::$jsonVariables = [
+                'debug' => function () {
+                    return config('app.debug') || app()->environment('testing');
+                },
                 'logo' => static::logo(),
                 'brandColors' => static::brandColors(),
                 'brandColorsCSS' => static::brandColorsCSS(),
@@ -1023,6 +1033,9 @@ class Nova
                 'themeSwitcherEnabled' => function () {
                     return static::$withThemeSwitcher;
                 },
+                'showUnreadCountInNotificationCenter' => function () {
+                    return static::$showUnreadCountInNotificationCenter;
+                },
                 'withAuthentication' => static::$withAuthentication,
                 'withPasswordReset' => static::$withPasswordReset,
                 'customLoginPath' => config('nova.routes.login', false),
@@ -1030,7 +1043,9 @@ class Nova
                 'forgotPasswordPath' => config('nova.routes.forgot_password', false),
                 'resetPasswordPath' => config('nova.routes.reset_password', false),
                 'debounce' => static::$debounce * 1000,
-                'initialPath' => static::$initialPath,
+                'initialPath' => function ($request) {
+                    return static::resolveInitialPath($request);
+                },
                 'base' => static::path(),
                 'userId' => $userId,
                 'mainMenu' => function ($request) use ($userId) {
@@ -1315,7 +1330,7 @@ class Nova
     /**
      * Set the initial route path when visiting the base Nova url.
      *
-     * @param  string  $path
+     * @param  string|(\Closure(\Illuminate\Http\Request):(string|null))  $path
      * @return static
      */
     public static function initialPath($path)
@@ -1414,7 +1429,7 @@ class Nova
     {
         return Blade::render('
             <p class="text-center">Powered by <a class="link-default" href="https://nova.laravel.com">Laravel Nova</a> · v{!! $version !!}</p>
-            <p class="text-center">&copy; {!! $year !!} Laravel LLC &middot; by Taylor Otwell and David Hemphill.</p>
+            <p class="text-center">&copy; {!! $year !!} Laravel Holdings Inc.</p>
         ', [
             'version' => static::version(),
             'year' => date('Y'),
@@ -1517,6 +1532,18 @@ class Nova
     }
 
     /**
+     * Resolve the user's initial path.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return string
+     */
+    public static function resolveInitialPath(Request $request)
+    {
+        /** @phpstan-ignore-next-line */
+        return value(static::$initialPath, $request) ?? '/dashboards/main';
+    }
+
+    /**
      * Translate the given message.
      *
      * @param  \Laravel\Nova\Support\PendingTranslation|string|null  $key
@@ -1531,5 +1558,17 @@ class Nova
         }
 
         return new Support\PendingTranslation($key, $replace, $locale);
+    }
+
+    /**
+     * Enable unread notifications count in the notification center.
+     *
+     * @return static
+     */
+    public static function showUnreadCountInNotificationCenter()
+    {
+        static::$showUnreadCountInNotificationCenter = true;
+
+        return new static;
     }
 }

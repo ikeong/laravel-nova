@@ -3,7 +3,7 @@
     <tr>
       <!-- Select Checkbox -->
       <th
-        class="td-fit uppercase text-xxs text-gray-500 tracking-wide pl-5 pr-2 py-2"
+        class="w-[1%] white-space-nowrap uppercase text-xxs text-gray-500 tracking-wide pl-5 pr-2 py-2"
         :class="{
           'border-r border-gray-200 dark:border-gray-600':
             shouldShowColumnBorders,

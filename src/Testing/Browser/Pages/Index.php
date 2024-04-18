@@ -66,7 +66,7 @@ class Index extends Page
     public function elements()
     {
         return [
-            '@nova-resource-index' => '#app [data-testid="content"] [dusk="'.$this->resourceName.'-index-component"]',
+            '@nova-resource-index' => '[dusk="'.$this->resourceName.'-index-component"]',
         ];
     }
 }

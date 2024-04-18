@@ -17,7 +17,7 @@ class AssociatableController extends Controller
     public function __invoke(NovaRequest $request)
     {
         $field = $request->newResource()
-                    ->availableFieldsOnIndexOrDetail($request)
+                    ->availableFields($request)
                     ->whereInstanceOf(RelatableField::class)
                     ->findFieldByAttribute($request->field, function () {
                         abort(404);

@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="hasItems"
-    class="sidebar-menu pb-24 space-y-6"
+    class="sidebar-menu space-y-6"
     dusk="sidebar-menu"
     role="navigation"
   >

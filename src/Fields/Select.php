@@ -17,7 +17,9 @@ use Stringable;
  */
 class Select extends Field implements FilterableField
 {
-    use FieldFilterable, Searchable, SupportsDependentFields;
+    use FieldFilterable;
+    use Searchable;
+    use SupportsDependentFields;
 
     /**
      * The field's component.

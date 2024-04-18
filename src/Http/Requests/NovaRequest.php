@@ -18,8 +18,8 @@ use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
  */
 class NovaRequest extends FormRequest
 {
-    use InteractsWithResources;
     use InteractsWithRelatedResources;
+    use InteractsWithResources;
     use InteractsWithResourcesSelection;
 
     /**
@@ -95,6 +95,16 @@ class NovaRequest extends FormRequest
     }
 
     /**
+     * Determine if this request is a lens request.
+     *
+     * @return bool
+     */
+    public function isLensRequest()
+    {
+        return $this instanceof LensRequest;
+    }
+
+    /**
      * Determine if this request is an action request.
      *
      * @return bool
@@ -123,7 +133,9 @@ class NovaRequest extends FormRequest
      */
     public function isPresentationRequest()
     {
-        return $this->isResourceIndexRequest() || $this->isResourceDetailRequest();
+        return $this->isResourceIndexRequest()
+            || $this->isResourceDetailRequest()
+            || $this->isLensRequest();
     }
 
     /**

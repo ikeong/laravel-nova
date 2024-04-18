@@ -3,7 +3,9 @@
 namespace Laravel\Nova\Console;
 
 use Illuminate\Filesystem\Filesystem;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'nova:field')]
 class FieldCommand extends ComponentGeneratorCommand
 {
     /**

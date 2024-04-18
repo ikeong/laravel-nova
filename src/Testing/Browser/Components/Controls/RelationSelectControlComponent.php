@@ -11,6 +11,6 @@ class RelationSelectControlComponent extends SelectControlComponent
      */
     public function selector()
     {
-        return "select[dusk='{$this->attribute}-select']";
+        return "@{$this->attribute}-select";
     }
 }

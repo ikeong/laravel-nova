@@ -5,7 +5,6 @@ namespace Laravel\Nova\Query;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Support\LazyCollection;
 use Laravel\Nova\Contracts\QueryBuilder;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\TrashedStatus;
@@ -118,7 +117,7 @@ class Builder implements QueryBuilder
             if (! $hasSearchKeyword && ! $hasOrderings) {
                 $this->tap(function ($query) {
                     /** @var \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation $query */
-                    $query->latest($query->getModel()->getQualifiedKeyName());
+                    $this->resourceClass::defaultOrderings($query);
                 });
             }
         }
@@ -211,17 +210,14 @@ class Builder implements QueryBuilder
     {
         $queryBuilder = $this->applyQueryCallbacks($this->queryBuilder);
 
-        if (method_exists($queryBuilder, 'cursor')) {
+        if (
+            method_exists($queryBuilder, 'cursor')
+            && (! $queryBuilder instanceof ScoutBuilder && empty($queryBuilder->getEagerLoads()))
+        ) {
             return $queryBuilder->cursor();
         }
 
-        return LazyCollection::make(function () use ($queryBuilder) {
-            yield from $queryBuilder->get()
-                ->each(function ($result) {
-                    /** @var \Illuminate\Database\Eloquent\Model $result */
-                    yield $result;
-                });
-        });
+        return $queryBuilder->get()->lazy();
     }
 
     /**

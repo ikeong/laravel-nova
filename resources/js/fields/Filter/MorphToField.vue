@@ -62,21 +62,24 @@ export default {
 
   methods: {
     setCurrentFilterValue() {
-      this.value = this.filter.currentValue
+      let selectedOption = find(
+        this.field.morphToTypes,
+        v => v.type === this.filter.currentValue
+      )
+
+      this.value = !isNil(selectedOption) ? selectedOption.value : ''
     },
 
     handleChange() {
       let selectedOption = find(
         this.field.morphToTypes,
-        v => v.value == this.value
+        v => v.value === this.value
       )
 
-      this.$store.commit(`${this.resourceName}/updateFilterState`, {
+      this.$emit('change', {
         filterClass: this.filterKey,
         value: !isNil(selectedOption) ? selectedOption.type : '',
       })
-
-      this.$emit('change')
     },
   },
 

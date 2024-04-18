@@ -7,6 +7,7 @@ module.exports = {
     './src/**/*.php',
     './src/**/*.vue',
     './resources/**/*{js,vue,blade.php}',
+    './node_modules/laravel-nova-ui/**/*{js,ts,vue}',
   ],
   darkMode: 'class', // or 'media' or 'class'
   // safelist: [
@@ -38,6 +39,7 @@ module.exports = {
     },
   },
   plugins: [
+    require('@tailwindcss/container-queries'),
     require('@tailwindcss/typography'),
     function ({ addBase }) {
       addBase({ ':root': generateRootCSSVars() })

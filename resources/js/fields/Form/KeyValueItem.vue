@@ -63,24 +63,29 @@
       v-if="isEditable && canDeleteRow"
       class="flex justify-center h-11 w-11 absolute -right-[50px]"
     >
-      <BasicButton
+      <Button
         @click="$emit('remove-row', item.id)"
         :dusk="`remove-key-value-${index}`"
+        variant="link"
+        state="danger"
         type="button"
         tabindex="0"
-        class="flex items-center appearance-none cursor-pointer text-red-500 hover:text-red-600 active:outline-none active:ring focus:outline-none focus:ring ring-primary-200 dark:ring-gray-600"
         :title="__('Delete')"
-      >
-        <Icon type="minus-circle" />
-      </BasicButton>
+        icon="minus-circle"
+      />
     </div>
   </div>
 </template>
 
 <script>
 import autosize from 'autosize'
+import { Button } from 'laravel-nova-ui'
 
 export default {
+  components: {
+    Button,
+  },
+
   emits: ['remove-row'],
 
   props: {

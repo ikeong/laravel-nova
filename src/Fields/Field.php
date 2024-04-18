@@ -23,13 +23,13 @@ use Laravel\Nova\Util;
 abstract class Field extends FieldElement implements JsonSerializable, Resolvable
 {
     use DependentFields;
+    use HandlesValidation;
     use HasHelpText;
     use Macroable;
     use PeekableFields;
     use PreviewableFields;
     use SupportsFullWidthFields;
     use Tappable;
-    use HandlesValidation;
 
     const LEFT_ALIGN = 'left';
 
@@ -404,7 +404,6 @@ abstract class Field extends FieldElement implements JsonSerializable, Resolvabl
     /**
      * Hydrate the given attribute on the model based on the incoming request.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent  $model
      * @return mixed
      */
@@ -416,7 +415,6 @@ abstract class Field extends FieldElement implements JsonSerializable, Resolvabl
     /**
      * Hydrate the given attribute on the model based on the incoming request.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent  $model
      * @return mixed
      */
@@ -428,7 +426,6 @@ abstract class Field extends FieldElement implements JsonSerializable, Resolvabl
     /**
      * Hydrate the given attribute on the model based on the incoming request.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent  $model
      * @param  string  $attribute
      * @param  string|null  $requestAttribute
@@ -442,7 +439,6 @@ abstract class Field extends FieldElement implements JsonSerializable, Resolvabl
     /**
      * Hydrate the given attribute on the model based on the incoming request.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  string  $requestAttribute
      * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent  $model
      * @param  string  $attribute
@@ -482,10 +478,9 @@ abstract class Field extends FieldElement implements JsonSerializable, Resolvabl
      *
      * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent  $model
      * @param  mixed  $value
-     * @param  string  $attribute
      * @return void
      */
-    public function fillModelWithData(mixed $model, mixed $value, string $attribute)
+    public function fillModelWithData($model, $value, string $attribute)
     {
         $attributes = [Str::replace('.', '->', $attribute) => $value];
 
@@ -503,7 +498,6 @@ abstract class Field extends FieldElement implements JsonSerializable, Resolvabl
     }
 
     /**
-     * @param  bool  $compact
      * @return Field
      */
     public function compact(bool $compact = true)
@@ -677,7 +671,6 @@ abstract class Field extends FieldElement implements JsonSerializable, Resolvabl
     /**
      * Determine if the field is readonly.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return bool
      */
     public function isReadonly(NovaRequest $request)
@@ -734,7 +727,6 @@ abstract class Field extends FieldElement implements JsonSerializable, Resolvabl
     /**
      * Determine if the field is required.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return bool
      */
     public function isRequired(NovaRequest $request)
@@ -745,7 +737,7 @@ abstract class Field extends FieldElement implements JsonSerializable, Resolvabl
             }
 
             if (! empty($this->attribute) && is_null($callback)) {
-                if ($request->isResourceIndexRequest() || $request->isActionRequest()) {
+                if ($request->isResourceIndexRequest() || $request->isLensRequest() || $request->isActionRequest()) {
                     return in_array('required', $this->getCreationRules($request)[$this->attribute]);
                 }
 
@@ -803,27 +795,35 @@ abstract class Field extends FieldElement implements JsonSerializable, Resolvabl
     /**
      * Resolve the default value for the field.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return mixed
      */
-    protected function resolveDefaultValue(NovaRequest $request)
+    public function resolveDefaultValue(NovaRequest $request)
     {
         if ($this->requestShouldResolveDefaultValue($request)) {
-            if (is_null($this->value) && $this->defaultCallback instanceof Closure) {
-                return call_user_func($this->defaultCallback, $request);
-            }
-
-            return $this->defaultCallback;
+            return $this->resolveDefaultCallback($request);
         }
+    }
+
+    /**
+     * Resolve the default callback for the field.
+     *
+     * @return mixed
+     */
+    public function resolveDefaultCallback(NovaRequest $request)
+    {
+        if (is_null($this->value) && $this->defaultCallback instanceof Closure) {
+            return call_user_func($this->defaultCallback, $request);
+        }
+
+        return $this->defaultCallback;
     }
 
     /**
      * Determine if request should resolve default value.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return bool
      */
-    protected function requestShouldResolveDefaultValue(NovaRequest $request)
+    public function requestShouldResolveDefaultValue(NovaRequest $request)
     {
         return $request->isCreateOrAttachRequest() || $request->isActionRequest();
     }

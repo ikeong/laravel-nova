@@ -7,7 +7,7 @@
         }}</span>
 
         <input
-          class="block w-full form-control form-input form-input-bordered"
+          class="block w-full form-control form-input form-control-bordered"
           v-model="startValue"
           :dusk="`${field.uniqueKey}-range-start`"
           v-bind="startExtraAttributes"
@@ -19,7 +19,7 @@
           `${filter.name} - ${__('To')}`
         }}</span>
         <input
-          class="block w-full form-control form-input form-input-bordered"
+          class="block w-full form-control form-input form-control-bordered"
           v-model="endValue"
           :dusk="`${field.uniqueKey}-range-end`"
           v-bind="endExtraAttributes"
@@ -107,12 +107,10 @@ export default {
     },
 
     handleChange() {
-      this.$store.commit(`${this.resourceName}/updateFilterState`, {
+      this.$emit('change', {
         filterClass: this.filterKey,
         value: this.validateFilter(this.startValue, this.endValue),
       })
-
-      this.$emit('change')
     },
   },
 

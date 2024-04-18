@@ -16,45 +16,44 @@ class SelectAllDropdownComponent extends Component
         return '@select-all-dropdown';
     }
 
+    protected function assertCheckboxStatus(Browser $browser, $status)
+    {
+        $browser->assertAttribute('@select-all-indicator', 'data-state', $status);
+    }
+
     /**
      * Assert that the checkbox is checked.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function assertCheckboxIsChecked(Browser $browser)
     {
-        $browser->assertPresent('span.fake-checkbox.fake-checkbox-checked');
+        $this->assertCheckboxStatus($browser, 'checked');
     }
 
     /**
      * Assert that the checkbox is not checked.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function assertCheckboxIsNotChecked(Browser $browser)
     {
-        $browser->assertPresent('span.fake-checkbox')
-            ->assertNotPresent('span.fake-checkbox.fake-checkbox-checked')
-            ->assertNotPresent('span.fake-checkbox.fake-checkbox-indeterminate');
+        $this->assertCheckboxStatus($browser, 'unchecked');
     }
 
     /**
      * Assert that the checkbox is indeterminate.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function assertCheckboxIsIndeterminate(Browser $browser)
     {
-        $browser->assertPresent('span.fake-checkbox.fake-checkbox-indeterminate');
+        $this->assertCheckboxStatus($browser, 'indeterminate');
     }
 
     /**
      * Assert select all the the resources on current page is checked.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function assertSelectAllOnCurrentPageChecked(Browser $browser)
@@ -65,42 +64,48 @@ class SelectAllDropdownComponent extends Component
     /**
      * Assert select all the the resources on current page isn't checked.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function assertSelectAllOnCurrentPageNotChecked(Browser $browser)
     {
-        $browser->assertPresent('span.fake-checkbox')
-            ->assertNotPresent('span.fake-checkbox.fake-checkbox-indeterminate');
+        $this->assertCheckboxIsNotChecked($browser);
     }
 
     /**
      * Assert select all the matching resources is checked.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function assertSelectAllMatchingChecked(Browser $browser)
     {
-        $this->assertCheckboxIsChecked($browser);
+        $browser
+            ->waitFor('@select-all-dropdown-trigger')
+            ->click('@select-all-dropdown-trigger')
+            ->elsewhereWhenAvailable('@dropdown-menu', function (Browser $browser) {
+                $browser->assertAttribute('@select-all-matching-button', 'data-state', 'checked');
+            })
+            ->closeCurrentDropdown();
     }
 
     /**
      * Assert select all the matching resources isn't checked.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function assertSelectAllMatchingNotChecked(Browser $browser)
     {
-        $browser->assertPresent('span.fake-checkbox')
-            ->assertNotPresent('span.fake-checkbox.fake-checkbox-checked');
+        $browser
+            ->waitFor('@select-all-dropdown-trigger')
+            ->click('@select-all-dropdown-trigger')
+            ->elsewhereWhenAvailable('@dropdown-menu', function (Browser $browser) {
+                $browser->assertAttribute('@select-all-matching-button', 'data-state', 'unchecked');
+            })
+            ->closeCurrentDropdown();
     }
 
     /**
      * Assert on the total selected count text.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @param  int  $count
      * @return void
      */
@@ -112,76 +117,81 @@ class SelectAllDropdownComponent extends Component
     /**
      * Assert on the matching total matching count text.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @param  int  $count
      * @return void
      */
     public function assertSelectAllMatchingCount(Browser $browser, $count)
     {
-        $browser->click('')
-            ->elsewhereWhenAvailable('[dusk="select-all-matching-count"]', function ($browser) use ($count) {
-                $browser->assertSeeIn('', $count);
-            })->closeCurrentDropdown();
+        $browser
+            ->waitFor('@select-all-dropdown-trigger')
+            ->click('@select-all-dropdown-trigger')
+            ->elsewhereWhenAvailable('@dropdown-menu', function (Browser $browser) use ($count) {
+                $browser->assertSeeIn('@select-all-matching-count', $count);
+            })
+            ->closeCurrentDropdown();
     }
 
     /**
      * Select all the the resources on current page.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function selectAllOnCurrentPage(Browser $browser)
     {
-        $browser->click('')
-            ->elsewhereWhenAvailable('[dusk="select-all-button"]', function ($browser) {
-                $browser->check('input[type="checkbox"]');
+        $browser
+            ->waitFor('@select-all-dropdown-trigger')
+            ->click('@select-all-dropdown-trigger')
+            ->elsewhereWhenAvailable('@dropdown-menu', function ($browser) {
+                $browser->click('@select-all-button');
             })
-            ->pause(250)
             ->closeCurrentDropdown();
     }
 
     /**
      * Un-select all the the resources on current page.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function unselectAllOnCurrentPage(Browser $browser)
     {
-        $browser->click('button')->pause(250);
+        $browser->waitFor('@deselect-all-button')
+            ->click('@deselect-all-button')->pause(250);
     }
 
     /**
      * Select all the matching resources.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function selectAllMatching(Browser $browser)
     {
-        $browser->click('')
-            ->elsewhereWhenAvailable('[dusk="select-all-matching-button"]', function ($browser) {
-                $browser->check('input[type="checkbox"]');
+        $browser
+            ->waitFor('@select-all-dropdown-trigger')
+            ->click('@select-all-dropdown-trigger')
+            ->elsewhereWhenAvailable('@dropdown-menu', function ($browser) {
+                $browser->click('@select-all-matching-button');
             })
-            ->pause(250)
             ->closeCurrentDropdown();
     }
 
     /**
      * Un-select all the matching resources.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function unselectAllMatching(Browser $browser)
     {
-        $browser->click('button')->pause(250);
+        $browser
+            ->waitFor('@select-all-dropdown-trigger', 2)
+            ->click('@select-all-dropdown-trigger')
+            ->elsewhereWhenAvailable('@dropdown-menu', function ($browser) {
+                $browser->click('@select-all-matching-button')->pause(250);
+            }, 2);
     }
 
     /**
      * Assert that the browser page contains the component.
      *
-     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      *
      * @throws \Facebook\WebDriver\Exception\TimeOutException

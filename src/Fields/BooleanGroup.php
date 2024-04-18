@@ -10,7 +10,8 @@ use Laravel\Nova\Nova;
 
 class BooleanGroup extends Field implements FilterableField
 {
-    use FieldFilterable, SupportsDependentFields;
+    use FieldFilterable;
+    use SupportsDependentFields;
 
     /**
      * The field's component.

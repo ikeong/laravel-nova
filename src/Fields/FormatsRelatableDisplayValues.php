@@ -31,7 +31,7 @@ trait FormatsRelatableDisplayValues
             return call_user_func($this->display, $resource);
         }
 
-        return (string) $resource->title();
+        return $resource->title();
     }
 
     /**

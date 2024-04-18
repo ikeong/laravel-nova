@@ -15,7 +15,8 @@ use Laravel\Nova\Util;
  */
 class MultiSelect extends Field implements FilterableField
 {
-    use FieldFilterable, SupportsDependentFields;
+    use FieldFilterable;
+    use SupportsDependentFields;
 
     /**
      * The field's component.

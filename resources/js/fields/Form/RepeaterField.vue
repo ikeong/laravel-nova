@@ -6,13 +6,15 @@
     :full-width-content="fullWidthContent"
   >
     <template #field>
-      <div v-if="value.length > 0" class="space-y-4">
+      <div v-if="value.length > 0" class="space-y-4" :dusk="fieldAttribute">
         <RepeaterRow
           v-for="(item, index) in value"
+          :dusk="`${index}-repeater-row`"
+          :data-repeater-id="valueMap.get(item)"
           :item="item"
           :index="index"
-          :key="JSON.stringify(item)"
-          @click="removeItem(index)"
+          :key="valueMap.get(item)"
+          @click="removeItem"
           :errors="errors"
           :sortable="currentField.sortable && value.length > 1"
           @move-up="moveUp"
@@ -22,25 +24,32 @@
         />
       </div>
       <div>
-        <div class="text-center">
-          <Dropdown v-if="currentField.blocks.length > 1">
-            <DropdownTrigger
-              class="link-default inline-flex items-center cursor-pointer px-3 space-x-1"
+        <div
+          class="text-center"
+          :class="{
+            'bg-gray-50 dark:bg-gray-900 rounded-lg border-4 dark:border-gray-600 border-dashed py-3':
+              value.length === 0,
+          }"
+        >
+          <Dropdown v-if="currentField.repeatables.length > 1">
+            <Button
+              variant="link"
+              leading-icon="plus-circle"
+              trailing-icon="chevron-down"
             >
-              <span><Icon type="plus-circle" /></span>
-              <span class="font-bold">{{ __('Add item') }}</span>
-            </DropdownTrigger>
+              {{ __('Add item') }}
+            </Button>
 
             <template #menu>
               <DropdownMenu class="py-1">
                 <DropdownMenuItem
-                  @click="() => addItem(block.type)"
+                  @click="() => addItem(repeatable.type)"
                   as="button"
-                  v-for="block in currentField.blocks"
+                  v-for="repeatable in currentField.repeatables"
                   class="space-x-2"
                 >
-                  <span><Icon :type="block.icon" /></span>
-                  <span>{{ block.singularLabel }}</span>
+                  <span><Icon solid :type="repeatable.icon" /></span>
+                  <span>{{ repeatable.singularLabel }}</span>
                 </DropdownMenuItem>
               </DropdownMenu>
             </template>
@@ -48,10 +57,14 @@
 
           <InvertedButton
             v-else
-            @click="addItem(currentField.blocks[0].type)"
+            @click="addItem(currentField.repeatables[0].type)"
             type="button"
           >
-            <span>Add {{ currentField.blocks[0].singularLabel }}</span>
+            <span>{{
+              __('Add :resource', {
+                resource: currentField.repeatables[0].singularLabel,
+              })
+            }}</span>
           </InvertedButton>
         </div>
       </div>
@@ -62,10 +75,14 @@
 <script>
 import { FormField, HandlesValidationErrors } from '@/mixins'
 import cloneDeep from 'lodash/cloneDeep'
+import { uid } from 'uid/single'
 import { computed } from 'vue'
+import { Button } from 'laravel-nova-ui'
 
 export default {
   mixins: [FormField, HandlesValidationErrors],
+
+  components: { Button },
 
   provide() {
     return {
@@ -79,7 +96,26 @@ export default {
     }
   },
 
+  data: () => ({
+    valueMap: new WeakMap(),
+  }),
+
+  beforeMount() {
+    this.value.map(repeatable => {
+      this.valueMap.set(repeatable, uid())
+
+      return repeatable
+    })
+  },
+
   methods: {
+    /**
+     * Return the field default value.
+     */
+    fieldDefaultValue() {
+      return []
+    },
+
     removeFile(attribute) {
       const {
         resourceName,
@@ -98,24 +134,33 @@ export default {
     },
 
     fill(formData) {
-      this.finalPayload.forEach((block, i) => {
+      this.finalPayload.forEach((repeatable, i) => {
         const attribute = `${this.fieldAttribute}[${i}]`
-        formData.append(`${attribute}[type]`, block.type)
-        Object.keys(block.fields).forEach(key => {
-          formData.append(`${attribute}[fields][${key}]`, block.fields[key])
+        formData.append(`${attribute}[type]`, repeatable.type)
+        Object.keys(repeatable.fields).forEach(key => {
+          formData.append(
+            `${attribute}[fields][${key}]`,
+            repeatable.fields[key]
+          )
         })
       })
     },
 
-    addItem(blockType) {
-      const block = this.currentField.blocks.find(t => t.type === blockType)
-      const copy = cloneDeep(block)
+    addItem(repeatableType) {
+      const repeatable = this.currentField.repeatables.find(
+        t => t.type === repeatableType
+      )
+      const copy = cloneDeep(repeatable)
+
+      this.valueMap.set(copy, uid())
 
       this.value.push(copy)
     },
 
     removeItem(index) {
-      this.value.splice(index, 1)
+      const item = this.value.splice(index, 1)
+
+      this.valueMap.delete(item)
     },
 
     moveUp(index) {
@@ -131,17 +176,17 @@ export default {
 
   computed: {
     finalPayload() {
-      return this.value.map(block => {
+      return this.value.map(repeatable => {
         const formData = new FormData()
         const fields = {}
 
-        block.fields.forEach(f => f.fill && f.fill(formData))
+        repeatable.fields.forEach(f => f.fill && f.fill(formData))
 
         for (const pair of formData.entries()) {
           fields[pair[0]] = pair[1]
         }
 
-        return { type: block.type, fields }
+        return { type: repeatable.type, fields }
       })
     },
   },

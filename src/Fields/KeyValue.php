@@ -101,7 +101,7 @@ class KeyValue extends Field
      * @param  string  $attribute
      * @return void
      */
-    public function fillModelWithData(mixed $model, mixed $value, string $attribute)
+    public function fillModelWithData($model, $value, string $attribute)
     {
         $model->forceFill([Str::replace('.', '->', $attribute) => $value]);
     }

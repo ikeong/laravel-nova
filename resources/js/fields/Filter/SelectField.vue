@@ -7,7 +7,7 @@
       <SearchInput
         v-if="isSearchable"
         ref="searchable"
-        :data-testid="`${field.uniqueKey}-search-filter`"
+        :dusk="`${field.uniqueKey}-search-filter`"
         @input="performSearch"
         @clear="clearSelection"
         @selected="selectOption"
@@ -121,7 +121,7 @@ export default {
      * Clear the current selection for the field.
      */
     clearSelection() {
-      this.selectedOption = ''
+      this.selectedOption = null
       this.value = ''
 
       if (this.$refs.searchable) {
@@ -138,12 +138,10 @@ export default {
     },
 
     handleChange() {
-      this.$store.commit(`${this.resourceName}/updateFilterState`, {
+      this.$emit('change', {
         filterClass: this.filterKey,
         value: this.value,
       })
-
-      this.$emit('change')
     },
 
     handleFilterReset() {
@@ -179,7 +177,10 @@ export default {
     filteredOptions() {
       return this.field.options.filter(option => {
         return (
-          option.label.toLowerCase().indexOf(this.search.toLowerCase()) > -1
+          option.label
+            .toString()
+            .toLowerCase()
+            .indexOf(this.search.toLowerCase()) > -1
         )
       })
     },

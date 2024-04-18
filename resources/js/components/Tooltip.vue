@@ -8,6 +8,8 @@
     :prevent-overflow="preventOverflow"
     :handle-resize="true"
     :theme="theme"
+    @show="$emit('tooltip-show')"
+    @hide="$emit('tooltip-hide')"
   >
     <span>
       <slot />
@@ -24,6 +26,8 @@ import { PopperWrapper } from 'floating-vue'
 
 export default {
   ...PopperWrapper,
+
+  emits: ['tooltip-show', 'tooltip-hide'],
 
   props: {
     distance: {

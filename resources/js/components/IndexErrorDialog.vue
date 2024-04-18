@@ -21,14 +21,23 @@
       }}
     </h3>
 
-    <OutlineButton class="flex-shrink-0 mt-6" @click="$emit('click')">
-      {{ __('Reload') }}
-    </OutlineButton>
+    <Button
+      class="shrink-0 mt-6"
+      @click="$emit('click')"
+      variant="outline"
+      :label="__('Reload')"
+    />
   </Card>
 </template>
 
 <script>
+import { Button } from 'laravel-nova-ui'
+
 export default {
+  components: {
+    Button,
+  },
+
   emits: ['click'],
 
   props: {

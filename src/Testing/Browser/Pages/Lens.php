@@ -44,7 +44,7 @@ class Lens extends Index
     public function elements()
     {
         return [
-            '@nova-resource-lens' => '#app [data-testid="content"] [dusk="'.$this->lens.'-lens-component"]',
+            '@nova-resource-lens' => '[dusk="'.$this->lens.'-lens-component"]',
         ];
     }
 }

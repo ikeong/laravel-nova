@@ -22,14 +22,14 @@ use Laravel\Nova\Util;
  */
 class BelongsTo extends Field implements FilterableField, RelatableField
 {
-    use AssociatableRelation,
-        DeterminesIfCreateRelationCanBeShown,
-        EloquentFilterable,
-        FormatsRelatableDisplayValues,
-        Peekable,
-        ResolvesReverseRelation,
-        Searchable,
-        SupportsDependentFields;
+    use AssociatableRelation;
+    use DeterminesIfCreateRelationCanBeShown;
+    use EloquentFilterable;
+    use FormatsRelatableDisplayValues;
+    use Peekable;
+    use ResolvesReverseRelation;
+    use Searchable;
+    use SupportsDependentFields;
 
     /**
      * The field's component.

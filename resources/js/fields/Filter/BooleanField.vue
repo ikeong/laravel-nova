@@ -1,33 +1,27 @@
 <template>
   <FilterContainer>
-    <div @click="handleChange">
+    <div>
       <label class="block">{{ filter.name }}</label>
 
-      <IconBoolean
-        :dusk="`${field.uniqueKey}-filter`"
-        class="mt-2"
-        :value="value"
-        :nullable="true"
-      />
+      <button type="button" @click="handleChange" class="p-0 m-0">
+        <IconBoolean
+          :dusk="`${field.uniqueKey}-filter`"
+          class="mt-2"
+          :value="value"
+          :nullable="true"
+        />
+      </button>
     </div>
   </FilterContainer>
 </template>
 
 <script>
-import isNil from 'lodash/isNil'
-
 export default {
   emits: ['change'],
 
   props: {
-    resourceName: {
-      type: String,
-      required: true,
-    },
-    filterKey: {
-      type: String,
-      required: true,
-    },
+    resourceName: { type: String, required: true },
+    filterKey: { type: String, required: true },
     lens: String,
   },
 
@@ -35,12 +29,10 @@ export default {
     handleChange() {
       let value = this.nextValue(this.value)
 
-      this.$store.commit(`${this.resourceName}/updateFilterState`, {
+      this.$emit('change', {
         filterClass: this.filterKey,
         value: value ?? '',
       })
-
-      this.$emit('change')
     },
 
     nextValue(value) {

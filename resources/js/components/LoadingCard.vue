@@ -1,9 +1,8 @@
 <template>
-  <Card class="relative">
+  <Card class="isolate">
     <div
-      v-if="loading"
-      class="rounded-lg flex items-center justify-center absolute inset-0 z-30"
-      :class="modeClass"
+      v-show="loading"
+      class="absolute inset-0 z-30 flex items-center justify-center rounded-lg bg-white dark:bg-gray-800"
     >
       <Loader class="text-gray-300" width="30" />
     </div>
@@ -18,20 +17,6 @@ export default {
     loading: {
       type: Boolean,
       default: true,
-    },
-
-    mode: {
-      type: String,
-      default: 'light',
-      validator: function (value) {
-        return ['light', 'dark'].indexOf(value) !== -1
-      },
-    },
-  },
-
-  computed: {
-    modeClass() {
-      return this.mode == 'light' ? 'bg-white dark:bg-gray-800' : 'bg-90'
     },
   },
 }

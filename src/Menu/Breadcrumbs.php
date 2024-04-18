@@ -9,8 +9,8 @@ use Laravel\Nova\Makeable;
 
 class Breadcrumbs implements JsonSerializable
 {
-    use AuthorizedToSee,
-        Makeable;
+    use AuthorizedToSee;
+    use Makeable;
 
     /**
      * The breadcrumb's path.

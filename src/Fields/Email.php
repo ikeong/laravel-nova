@@ -9,7 +9,8 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 
 class Email extends Text implements FilterableField
 {
-    use FieldFilterable, SupportsDependentFields;
+    use FieldFilterable;
+    use SupportsDependentFields;
 
     /**
      * The field's component.

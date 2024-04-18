@@ -3,7 +3,9 @@
 namespace Laravel\Nova\Console;
 
 use Illuminate\Console\GeneratorCommand;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'nova:base-resource')]
 class BaseResourceCommand extends GeneratorCommand
 {
     use ResolvesStubPath;

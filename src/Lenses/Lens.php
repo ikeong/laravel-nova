@@ -25,15 +25,15 @@ use stdClass;
 
 abstract class Lens implements ArrayAccess, JsonSerializable, UrlRoutable
 {
-    use AuthorizedToSee,
-        ConditionallyLoadsAttributes,
-        DelegatesToResource,
-        Makeable,
-        ProxiesCanSeeToGate,
-        ResolvesActions,
-        ResolvesCards,
-        ResolvesFilters,
-        SupportsPolling;
+    use AuthorizedToSee;
+    use ConditionallyLoadsAttributes;
+    use DelegatesToResource;
+    use Makeable;
+    use ProxiesCanSeeToGate;
+    use ResolvesActions;
+    use ResolvesCards;
+    use ResolvesFilters;
+    use SupportsPolling;
 
     /**
      * The displayable name of the lens.

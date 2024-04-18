@@ -3,7 +3,7 @@
 namespace Laravel\Nova\Metrics;
 
 use Illuminate\Support\Collection;
-use Laravel\Nova\FilterDecoder;
+use Laravel\Nova\Filters\FilterDecoder;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
 trait ResolvesFilters

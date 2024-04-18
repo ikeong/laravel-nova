@@ -14,9 +14,9 @@ use Laravel\Nova\Makeable;
 class MenuGroup implements \JsonSerializable
 {
     use AuthorizedToSee;
-    use Makeable;
-    use Macroable;
     use Collapsable;
+    use Macroable;
+    use Makeable;
 
     /**
      * The menu's component.

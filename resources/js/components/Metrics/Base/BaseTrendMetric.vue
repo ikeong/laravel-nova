@@ -7,7 +7,7 @@
 
       <SelectControl
         v-if="ranges.length > 0"
-        class="ml-auto w-[6rem] flex-shrink-0"
+        class="ml-auto w-[6rem] shrink-0"
         size="xxs"
         :options="ranges"
         :selected="selectedRangeKey"

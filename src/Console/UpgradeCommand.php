@@ -4,7 +4,9 @@ namespace Laravel\Nova\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'nova:upgrade')]
 class UpgradeCommand extends Command
 {
     /**

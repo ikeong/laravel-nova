@@ -5,6 +5,7 @@ namespace Laravel\Nova\Testing\Browser\Components;
 use Facebook\WebDriver\WebDriverKeys;
 use Illuminate\Support\Arr;
 use Laravel\Dusk\Browser;
+use Laravel\Dusk\ElementResolver;
 
 class SearchInputComponent extends Component
 {
@@ -26,6 +27,24 @@ class SearchInputComponent extends Component
     }
 
     /**
+     * Show the component dropdown.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  string  $search
+     * @return void
+     */
+    public function showSearchDropdown(Browser $browser)
+    {
+        $resolver = new ElementResolver($browser->driver, 'body');
+
+        $input = $resolver->find("[dusk='{$this->attribute}-search-{$this->mode}-dropdown']");
+
+        if (is_null($input) || ! $input->isDisplayed()) {
+            $browser->click('');
+        }
+    }
+
+    /**
      * Search for the given value for a searchable field attribute.
      *
      * @param  \Laravel\Dusk\Browser  $browser
@@ -34,13 +53,11 @@ class SearchInputComponent extends Component
      */
     public function searchInput(Browser $browser, $search)
     {
-        $input = $browser->element('input');
+        $this->showSearchDropdown($browser);
 
-        if (is_null($input) || ! $input->isDisplayed()) {
-            $browser->click('')->waitFor('input');
-        }
-
-        $browser->type('input', $search);
+        $browser->elsewhereWhenAvailable("{$this->selector()}-dropdown", function ($browser) use ($search) {
+            $browser->type('input[type="search"]', $search);
+        });
     }
 
     /**
@@ -74,7 +91,7 @@ class SearchInputComponent extends Component
     {
         $this->searchInput($browser, $search);
 
-        $browser->pause(1500)->assertValue('input', $search);
+        $browser->pause(1500);
 
         $this->selectSearchResult($browser, $resultIndex);
     }
@@ -88,7 +105,11 @@ class SearchInputComponent extends Component
      */
     public function selectSearchResult(Browser $browser, $resultIndex)
     {
-        $browser->click("{$this->selector()}-result-{$resultIndex}")->pause(150);
+        $browser->elseWhereWhenAvailable("{$this->selector()}-dropdown", function ($browser) use ($resultIndex) {
+            $browser->whenAvailable("{$this->selector()}-result-{$resultIndex}", function ($browser) {
+                $browser->click('')->pause(300);
+            });
+        });
     }
 
     /**
@@ -148,13 +169,13 @@ class SearchInputComponent extends Component
      */
     public function assertSearchResult(Browser $browser, callable $fieldCallback)
     {
-        $browser->click('')
-            ->pause(100)
-            ->elsewhere('', function ($browser) use ($fieldCallback) {
-                $fieldCallback($browser, $this->selector());
+        $this->showSearchDropdown($browser);
 
-                $this->cancelSelectingSearchResult($browser);
-            });
+        $browser->elsewhereWhenAvailable("{$this->selector()}-dropdown", function ($browser) use ($fieldCallback) {
+            $fieldCallback($browser, $this->selector());
+
+            $this->cancelSelectingSearchResult($browser);
+        });
     }
 
     /**
@@ -236,6 +257,17 @@ class SearchInputComponent extends Component
                 $browser->assertDontSeeIn("{$attribute}-results", $keyword);
             }
         });
+    }
+
+    /**
+     * Assert that the current page contains this component.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @return void
+     */
+    public function assert(Browser $browser)
+    {
+        $browser->waitFor($this->selector());
     }
 
     /**

@@ -23,7 +23,7 @@ class RepeatableCollection extends Collection
      * Return a new instance of a Repeatable by its key.
      *
      * @param  string  $key
-     * @param  array  $data
+     * @param  \Illuminate\Database\Eloquent\Model|array  $data
      * @return \Laravel\Nova\Fields\Repeater\Repeatable
      */
     public function newRepeatableByKey($key, $data = [])
@@ -56,6 +56,6 @@ class RepeatableCollection extends Collection
     {
         $repeatable = $this->findByModelClass(get_class($model));
 
-        return new $repeatable($model->toArray());
+        return new $repeatable($model);
     }
 }

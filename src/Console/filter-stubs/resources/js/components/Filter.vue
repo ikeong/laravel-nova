@@ -8,11 +8,11 @@
         label="label"
         class="w-full block"
         size="sm"
-        v-model:selected="value"
-        @change="value = $event"
+        @change="handleChange"
+        :value="value"
         :options="filter.options"
       >
-        <option value="" :selected="value == ''">&mdash;</option>
+        <option value="" :selected="value === ''">&mdash;</option>
       </SelectControl>
     </template>
   </FilterContainer>
@@ -25,25 +25,18 @@ export default {
   emits: ['change'],
 
   props: {
-    resourceName: {
-      type: String,
-      required: true,
-    },
-    filterKey: {
-      type: String,
-      required: true,
-    },
+    resourceName: { type: String, required: true },
+    filterKey: { type: String, required: true },
     lens: String,
   },
 
   data: () => ({
     value: null,
-    debouncedHandleChange: null,
+    debouncedEmit: null,
   }),
 
   created() {
-    this.debouncedHandleChange = debounce(() => this.handleChange(), 500)
-
+    this.debouncedEmit = debounce(() => this.emitChange(), 500)
     this.setCurrentFilterValue()
   },
 
@@ -66,13 +59,16 @@ export default {
       this.value = this.filter.currentValue
     },
 
-    handleChange() {
-      this.$store.commit(`${this.resourceName}/updateFilterState`, {
+    handleChange(e) {
+      this.value = e
+      this.debouncedEmit()
+    },
+
+    emitChange() {
+      this.$emit('change', {
         filterClass: this.filterKey,
         value: this.value,
       })
-
-      this.$emit('change')
     },
   },
 

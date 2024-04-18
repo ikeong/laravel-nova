@@ -2,7 +2,7 @@
 
 namespace Laravel\Nova\Http\Requests;
 
-use Laravel\Nova\FilterDecoder;
+use Laravel\Nova\Filters\FilterDecoder;
 
 /**
  * @property-read string $filters

@@ -4,7 +4,9 @@ namespace Laravel\Nova\Console;
 
 use Illuminate\Console\Command;
 use Laravel\Nova\Nova;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'nova:user')]
 class UserCommand extends Command
 {
     /**

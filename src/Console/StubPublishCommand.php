@@ -4,7 +4,9 @@ namespace Laravel\Nova\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'nova:stubs')]
 class StubPublishCommand extends Command
 {
     /**

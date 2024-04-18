@@ -2,7 +2,10 @@
 
 namespace Laravel\Nova\Http\Middleware;
 
+use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Inertia\Middleware;
 use Laravel\Nova\Http\Resources\UserResource;
 use Laravel\Nova\Nova;
@@ -50,9 +53,23 @@ class HandleInertiaRequests extends Middleware
                     return ! is_null($user) ? UserResource::make($user)->toArray($request) : null;
                 });
             },
-            'validLicense' => function () {
-                return Nova::checkLicenseValidity();
+            'validLicense' => function () use ($request) {
+                return with(Nova::user($request), function ($user) {
+                    return ! is_null($user) ? Nova::checkLicenseValidity() : Cache::get('nova_valid_license_key');
+                });
             },
         ]);
+    }
+
+    /**
+     * Handle the incoming request.
+     *
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function handle(Request $request, Closure $next)
+    {
+        Config::set('inertia.ssr.enabled', false);
+
+        return parent::handle($request, $next);
     }
 }

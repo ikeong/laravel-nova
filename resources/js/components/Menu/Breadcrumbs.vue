@@ -3,6 +3,7 @@
     v-if="hasItems"
     class="text-gray-500 font-semibold"
     aria-label="breadcrumb"
+    dusk="breadcrumbs"
   >
     <ol>
       <li

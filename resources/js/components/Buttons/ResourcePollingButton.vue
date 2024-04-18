@@ -1,9 +1,5 @@
 <template>
-  <button
-    class="toolbar-button px-2"
-    @click="togglePolling"
-    v-tooltip.click="buttonLabel"
-  >
+  <button class="px-2" @click="togglePolling" v-tooltip.click="buttonLabel">
     <svg
       class="w-6 h-6"
       :class="{

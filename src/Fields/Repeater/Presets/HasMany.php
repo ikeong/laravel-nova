@@ -22,23 +22,22 @@ class HasMany implements Preset
      */
     public function set(
         NovaRequest $request,
+        string $requestAttribute,
         Model $model,
         string $attribute,
         RepeatableCollection $repeatables,
-        mixed $uniqueField
+        $uniqueField
     ) {
-        return function () use ($repeatables, $uniqueField, $request, $attribute, $model) {
-            $repeaterItems = collect($request->{$attribute});
-            /** @var EloquentHasMany $relation */
-            $relation = $model->{$attribute}();
+        return function () use ($request, $requestAttribute, $model, $attribute, $repeatables, $uniqueField) {
+            $repeaterItems = collect($request->input($requestAttribute));
 
             if (! $uniqueField) {
-                $relation->delete();
+                $model->{$attribute}()->delete();
             } else {
                 $this->deleteMissingRelations($attribute, $model, $repeaterItems, $uniqueField);
             }
 
-            $repeaterItems->transform(function ($item, $blockKey) use ($repeatables, $attribute, $request) {
+            $repeaterItems->transform(function ($item, $blockKey) use ($request, $requestAttribute, $repeatables) {
                 $block = $repeatables->findByKey($item['type']);
                 $fields = FieldCollection::make($block->fields($request));
                 $data = Fluent::make();
@@ -46,21 +45,21 @@ class HasMany implements Preset
                 $callbacks = $fields
                     ->withoutUnfillable()
                     ->withoutMissingValues()
-                    ->map(function (Field $field) use ($request, $data, $attribute, $blockKey) {
-                        return $field->fillInto($request, $data, $field->attribute, "{$attribute}.{$blockKey}.fields.{$field->attribute}");
+                    ->map(function (Field $field) use ($request, $requestAttribute, $data, $blockKey) {
+                        return $field->fillInto($request, $data, $field->attribute, "{$requestAttribute}.{$blockKey}.fields.{$field->attribute}");
                     })
                     ->filter(function ($callback) {
                         return is_callable($callback);
                     })->toBase();
 
                 return [$data, $callbacks, $item];
-            })->each(function ($tuple) use ($model, $relation, $uniqueField) {
+            })->each(function ($tuple) use ($model, $attribute, $uniqueField) {
                 [$data, $callbacks, $row] = $tuple;
 
                 if ($uniqueField) {
-                    $this->upsertRelation($model, $data, $row, $uniqueField, $relation);
+                    $this->upsertRelation($model, $data, $row, $uniqueField, $model->{$attribute}());
                 } else {
-                    $relation->forceCreate($data->getAttributes());
+                    $model->{$attribute}()->forceCreate($data->getAttributes());
                 }
 
                 $callbacks->each->__invoke();
@@ -91,13 +90,23 @@ class HasMany implements Preset
      * @param  mixed  $uniqueField
      * @return void
      */
-    public function deleteMissingRelations(string $attribute, Model $model, Collection $repeaterItems, mixed $uniqueField): void
+    public function deleteMissingRelations(string $attribute, Model $model, Collection $repeaterItems, $uniqueField): void
     {
-        $model->{$attribute}()->delete($model->{$attribute}()->pluck('id')->except(
-            $repeaterItems->map(function ($item) use ($uniqueField) {
-                return $item['fields'][$uniqueField];
-            })
-        ));
+        /** @var \Illuminate\Database\Eloquent\Relations\HasMany $relation */
+        $relation = $model->{$attribute}();
+
+        $availableItems = $repeaterItems->map(function ($item) use ($uniqueField) {
+            return $item['fields'][$uniqueField];
+        })->all();
+
+        $deletableIds = $relation->pluck($uniqueField)
+            ->reject(function ($id) use ($availableItems) {
+                return in_array($id, $availableItems);
+            });
+
+        if ($deletableIds->isNotEmpty()) {
+            $model->{$attribute}()->whereIn($uniqueField, $deletableIds)->delete();
+        }
     }
 
     /**
@@ -110,13 +119,20 @@ class HasMany implements Preset
      * @param  \Illuminate\Database\Eloquent\Relations\HasMany  $relation
      * @return void
      */
-    public function upsertRelation(Model $model, Fluent $data, array $row, mixed $uniqueField, EloquentHasMany $relation): void
+    public function upsertRelation(Model $model, Fluent $data, array $row, $uniqueField, EloquentHasMany $relation): void
     {
         $model->unguarded(function () use ($data, $row, $uniqueField, $relation) {
-            $relation->updateOrCreate(
-                [$uniqueField => $row['fields'][$uniqueField]],
-                Arr::except($data->getAttributes(), $uniqueField)
-            );
+            $uniqueValue = $row['fields'][$uniqueField];
+
+            $attributes = Arr::except($data->getAttributes(), $uniqueField);
+
+            if (empty($uniqueValue)) {
+                $relation->create($attributes);
+            } else {
+                $relation->updateOrCreate(
+                    [$uniqueField => $uniqueValue], $attributes
+                );
+            }
         });
     }
 }

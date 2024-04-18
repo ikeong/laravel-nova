@@ -14,7 +14,7 @@ use Laravel\Nova\Util;
 /**
  * @method static static make(mixed $name, string|null $attribute = null, string|null $resource = null)
  */
-class HasOne extends Field implements RelatableField, BehavesAsPanel
+class HasOne extends Field implements BehavesAsPanel, RelatableField
 {
     use FormatsRelatableDisplayValues;
 

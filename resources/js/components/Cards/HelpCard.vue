@@ -11,7 +11,7 @@
         <div class="md:grid md:grid-cols-2">
           <div class="border-r border-b border-gray-200 dark:border-gray-700">
             <a :href="resources" class="no-underline flex p-6">
-              <div class="flex justify-center w-11 flex-shrink-0 mr-6">
+              <div class="flex justify-center w-11 shrink-0 mr-6">
                 <svg
                   class="text-primary-500 dark:text-primary-600"
                   xmlns="http://www.w3.org/2000/svg"
@@ -39,7 +39,7 @@
 
           <div class="border-b border-gray-200 dark:border-gray-700">
             <a :href="actions" class="no-underline flex p-6">
-              <div class="flex justify-center w-11 flex-shrink-0 mr-6">
+              <div class="flex justify-center w-11 shrink-0 mr-6">
                 <svg
                   class="text-primary-500 dark:text-primary-600"
                   xmlns="http://www.w3.org/2000/svg"
@@ -67,7 +67,7 @@
 
           <div class="border-r border-b border-gray-200 dark:border-gray-700">
             <a :href="filters" class="no-underline flex p-6">
-              <div class="flex justify-center w-11 flex-shrink-0 mr-6">
+              <div class="flex justify-center w-11 shrink-0 mr-6">
                 <svg
                   class="text-primary-500 dark:text-primary-600"
                   xmlns="http://www.w3.org/2000/svg"
@@ -94,7 +94,7 @@
 
           <div class="border-b border-gray-200 dark:border-gray-700">
             <a :href="lenses" class="no-underline flex p-6">
-              <div class="flex justify-center w-11 flex-shrink-0 mr-6">
+              <div class="flex justify-center w-11 shrink-0 mr-6">
                 <svg
                   class="text-primary-500 dark:text-primary-600"
                   xmlns="http://www.w3.org/2000/svg"
@@ -124,7 +124,7 @@
             class="border-r md:border-b-0 border-b border-gray-200 dark:border-gray-700"
           >
             <a :href="metrics" class="no-underline flex p-6">
-              <div class="flex justify-center w-11 flex-shrink-0 mr-6">
+              <div class="flex justify-center w-11 shrink-0 mr-6">
                 <svg
                   class="text-primary-500 dark:text-primary-600"
                   xmlns="http://www.w3.org/2000/svg"
@@ -154,7 +154,7 @@
             class="md:border-b-0 border-b border-gray-200 dark:border-gray-700"
           >
             <a :href="cards" class="no-underline flex p-6">
-              <div class="flex justify-center w-11 flex-shrink-0 mr-6">
+              <div class="flex justify-center w-11 shrink-0 mr-6">
                 <svg
                   class="text-primary-500 dark:text-primary-600"
                   xmlns="http://www.w3.org/2000/svg"

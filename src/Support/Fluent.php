@@ -13,7 +13,7 @@ class Fluent extends \Illuminate\Support\Fluent
     /**
      * Fill the model with an array of attributes.
      *
-     * @param  array  $attributes
+     * @param  array<string, mixed>  $attributes
      * @return $this
      */
     public function fill(array $attributes)
@@ -32,7 +32,7 @@ class Fluent extends \Illuminate\Support\Fluent
     /**
      * Fill the model with an array of attributes.
      *
-     * @param  array  $attributes
+     * @param  array<string, mixed>  $attributes
      * @return $this
      */
     public function forceFill(array $attributes)

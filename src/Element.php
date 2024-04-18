@@ -10,10 +10,10 @@ use JsonSerializable;
  */
 abstract class Element implements JsonSerializable
 {
-    use Metable;
     use AuthorizedToSee;
-    use ProxiesCanSeeToGate;
     use Makeable;
+    use Metable;
+    use ProxiesCanSeeToGate;
 
     /**
      * The element's component.

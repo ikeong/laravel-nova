@@ -24,44 +24,48 @@
       :data="actionResponseData"
     />
 
-    <Dropdown class="h-9">
-      <slot name="sr-only">
-        <span class="sr-only">{{ __('Standalone Actions') }}</span>
-      </slot>
-      <slot name="trigger">
-        <DropdownTrigger
-          :dusk="triggerDuskAttribute"
-          :show-arrow="false"
-          class="rounded hover:bg-gray-200 dark:hover:bg-gray-800 focus:outline-none focus:ring"
-        >
-          <BasicButton component="span">
-            <Icon :solid="true" type="dots-horizontal" />
-          </BasicButton>
-        </DropdownTrigger>
-      </slot>
+    <Dropdown>
+      <template #default>
+        <slot name="trigger">
+          <Button
+            @click.stop
+            :dusk="triggerDuskAttribute"
+            variant="ghost"
+            icon="ellipsis-horizontal"
+            v-tooltip="__('Actions')"
+          />
+        </slot>
+      </template>
 
       <template #menu>
-        <DropdownMenu width="auto" class="px-1">
-          <ScrollWrap
-            :height="250"
-            class="divide-y divide-gray-100 dark:divide-gray-800 divide-solid"
-          >
-            <slot />
+        <DropdownMenu width="auto">
+          <ScrollWrap :height="250">
+            <nav
+              class="px-1 divide-y divide-gray-100 dark:divide-gray-800 divide-solid"
+            >
+              <slot name="menu" />
 
-            <div v-if="actions.length > 0" class="py-1">
-              <DropdownMenuItem
-                v-for="action in actions"
-                :key="action.uriKey"
-                :data-action-id="action.uriKey"
-                as="button"
-                class="border-none"
-                @click="() => handleActionClick(action.uriKey)"
-                :title="action.name"
-                :destructive="action.destructive"
-              >
-                {{ action.name }}
-              </DropdownMenuItem>
-            </div>
+              <div v-if="actions.length > 0">
+                <DropdownMenuHeading v-if="showHeadings">{{
+                  __('User Actions')
+                }}</DropdownMenuHeading>
+
+                <div class="py-1">
+                  <DropdownMenuItem
+                    v-for="action in actions"
+                    :key="action.uriKey"
+                    :data-action-id="action.uriKey"
+                    as="button"
+                    class="border-none"
+                    @click="() => handleClick(action)"
+                    :title="action.name"
+                    :disabled="action.authorizedToRun === false"
+                  >
+                    {{ action.name }}
+                  </DropdownMenuItem>
+                </div>
+              </div>
+            </nav>
           </ScrollWrap>
         </DropdownMenu>
       </template>
@@ -73,6 +77,8 @@
 import { useActions } from '@/composables/useActions'
 import { useStore } from 'vuex'
 const store = useStore()
+import { Button } from 'laravel-nova-ui'
+import DropdownMenuHeading from './DropdownMenuHeading.vue'
 
 const emitter = defineEmits(['actionExecuted'])
 
@@ -86,6 +92,7 @@ const props = defineProps({
   selectedResources: { type: [Array, String], default: () => [] },
   endpoint: { type: String, default: null },
   triggerDuskAttribute: { type: String, default: null },
+  showHeadings: { type: Boolean, default: false },
 })
 
 const {
@@ -103,6 +110,12 @@ const {
 } = useActions(props, emitter, store)
 
 const runAction = () => executeAction(() => emitter('actionExecuted'))
+
+const handleClick = action => {
+  if (action.authorizedToRun !== false) {
+    handleActionClick(action.uriKey)
+  }
+}
 
 const handleResponseModalConfirm = () => {
   closeResponseModal()

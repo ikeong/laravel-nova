@@ -35,7 +35,7 @@ class Create extends Page
     {
         $browser->dismissToasted()
             ->click('@create-button')
-            ->pause(500);
+            ->pause(1000);
     }
 
     /**

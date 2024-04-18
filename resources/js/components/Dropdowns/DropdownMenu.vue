@@ -1,9 +1,8 @@
 <template>
   <div
-    ref="menu"
     :style="styles"
     class="select-none overflow-hidden bg-white dark:bg-gray-900 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700"
-    :class="{ 'max-w-sm lg:max-w-lg': width == 'auto' }"
+    :class="{ 'max-w-sm lg:max-w-lg': width === 'auto' }"
   >
     <slot />
   </div>

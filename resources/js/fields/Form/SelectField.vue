@@ -9,17 +9,18 @@
       <!-- Search Input -->
       <SearchInput
         v-if="!currentlyIsReadonly && isSearchable"
-        :data-testid="`${field.attribute}-search-input`"
+        :dusk="`${field.attribute}-search-input`"
         @input="performSearch"
         @clear="clearSelection"
         @selected="selectOption"
-        :error="hasError"
+        :has-error="hasError"
         :value="selectedOption"
         :data="filteredOptions"
         :clearable="currentField.nullable"
         trackBy="value"
         class="w-full"
         :mode="mode"
+        :disabled="currentlyIsReadonly"
       >
         <!-- The Selected Option Slot -->
         <div v-if="selectedOption" class="flex items-center">
@@ -45,7 +46,7 @@
         v-model:selected="value"
         @change="handleChange"
         class="w-full"
-        :select-classes="{ 'form-input-border-error': hasError }"
+        :has-error="hasError"
         :options="currentField.options"
         :disabled="currentlyIsReadonly"
       >
@@ -62,6 +63,7 @@ import find from 'lodash/find'
 import first from 'lodash/first'
 import isNil from 'lodash/isNil'
 import { DependentFormField, HandlesValidationErrors } from '@/mixins'
+import filled from '@/util/filled'
 
 export default {
   mixins: [HandlesValidationErrors, DependentFormField],
@@ -69,11 +71,10 @@ export default {
   data: () => ({
     search: '',
     selectedOption: null,
-    value: null,
   }),
 
   created() {
-    if (this.field.value) {
+    if (filled(this.field.value)) {
       let selectedOption = find(
         this.field.options,
         v => v.value == this.field.value
@@ -86,6 +87,13 @@ export default {
   },
 
   methods: {
+    /**
+     * Return the field default value.
+     */
+    fieldDefaultValue() {
+      return null
+    },
+
     /**
      * Provide a function that fills a passed FormData object with the
      * field's internal value attribute. Here we are forcing there to be a
@@ -108,8 +116,8 @@ export default {
      * Clear the current selection for the field.
      */
     clearSelection() {
-      this.selectedOption = ''
-      this.value = ''
+      this.selectedOption = null
+      this.value = this.fieldDefaultValue()
 
       if (this.field) {
         this.emitFieldValueChange(this.fieldAttribute, this.value)
@@ -156,7 +164,7 @@ export default {
         hasValue = true
         currentSelectedOption = find(
           this.currentField.options,
-          v => v.value == this.selectedOption.value
+          v => v.value === this.selectedOption.value
         )
       }
 
@@ -203,7 +211,10 @@ export default {
     filteredOptions() {
       return this.currentField.options.filter(option => {
         return (
-          option.label.toLowerCase().indexOf(this.search.toLowerCase()) > -1
+          option.label
+            .toString()
+            .toLowerCase()
+            .indexOf(this.search.toLowerCase()) > -1
         )
       })
     },

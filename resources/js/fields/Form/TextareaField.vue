@@ -9,7 +9,7 @@
       <div class="space-y-1">
         <textarea
           v-bind="extraAttributes"
-          class="block w-full form-control form-input form-input-bordered py-3 h-auto"
+          class="block w-full form-control form-input form-control-bordered py-3 h-auto"
           :id="currentField.uniqueKey"
           :dusk="field.attribute"
           :value="value"

@@ -1,5 +1,5 @@
 <template>
-  <teleport to="#modals">
+  <teleport to="body">
     <template v-if="show">
       <div
         v-bind="defaultAttributes"
@@ -9,13 +9,12 @@
             modalStyle === 'window',
           'h-full': modalStyle === 'fullscreen',
         }"
-        :tabindex="tabIndex"
         :role="role"
         :data-modal-open="show"
         :aria-modal="show"
       >
         <div
-          class="relative mx-auto z-20"
+          class="@container/modal relative mx-auto z-20"
           :class="contentClasses"
           ref="modalContent"
         >
@@ -24,143 +23,167 @@
       </div>
 
       <div
-        class="fixed inset-0 z-[55] bg-gray-500 dark:bg-gray-900 opacity-75"
+        class="fixed inset-0 z-[55] bg-gray-500/75 dark:bg-gray-900/75"
         dusk="modal-backdrop"
       />
     </template>
   </teleport>
 </template>
 
-<script>
-import { mapGetters, mapMutations } from 'vuex'
+<script setup>
+import { useStore } from 'vuex'
 import filter from 'lodash/filter'
 import omit from 'lodash/omit'
-import trapFocus from '@/util/trapFocus'
+import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
+import { useEventListener } from '@vueuse/core'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  useAttrs,
+  watch,
+} from 'vue'
 
-export default {
-  emits: ['showing', 'closing', 'close-via-escape'],
+const modalContent = ref(null)
 
-  inheritAttrs: false,
+const attrs = useAttrs()
 
-  props: {
-    show: {
-      type: Boolean,
-      default: false,
-    },
+const emit = defineEmits(['showing', 'closing', 'close-via-escape'])
 
-    size: {
-      type: String,
-      default: 'xl',
-      validator: v =>
-        [
-          'sm',
-          'md',
-          'lg',
-          'xl',
-          '2xl',
-          '3xl',
-          '4xl',
-          '5xl',
-          '6xl',
-          '7xl',
-        ].includes(v),
-    },
+defineOptions({ inheritAttrs: false })
 
-    modalStyle: {
-      type: String,
-      default: 'window',
-    },
-
-    role: {
-      type: String,
-      default: 'dialog',
-    },
+const props = defineProps({
+  show: { type: Boolean, default: false },
+  size: {
+    type: String,
+    default: 'xl',
+    validator: v =>
+      [
+        'sm',
+        'md',
+        'lg',
+        'xl',
+        '2xl',
+        '3xl',
+        '4xl',
+        '5xl',
+        '6xl',
+        '7xl',
+      ].includes(v),
   },
+  modalStyle: { type: String, default: 'window' },
+  role: { type: String, default: 'dialog' },
+  useFocusTrap: { type: Boolean, default: true },
+})
 
-  watch: {
-    show(showing) {
-      this.handleVisibilityChange(showing)
-    },
-  },
+const usesFocusTrap = ref(true)
 
-  created() {
-    document.addEventListener('keydown', this.closeOnEscape)
-  },
+const hasTrapFocus = computed(() => {
+  return props.useFocusTrap && usesFocusTrap.value === true
+})
 
-  beforeUnmount() {
+const { activate, deactivate } = useFocusTrap(modalContent, {
+  immediate: false,
+  allowOutsideClick: true,
+  escapeDeactivates: false,
+})
+
+watch(
+  () => props.show,
+  v => handleVisibilityChange(v)
+)
+
+watch(hasTrapFocus, enable => {
+  try {
+    if (enable) {
+      nextTick(() => activate())
+    } else {
+      deactivate()
+    }
+  } catch (e) {
+    //
+  }
+})
+
+useEventListener(document, 'keydown', e => {
+  if (e.key === 'Escape' && props.show === true) {
+    emit('close-via-escape', e)
+  }
+})
+
+const disableModalFocusTrap = () => {
+  usesFocusTrap.value = false
+}
+
+const enableModalFocusTrap = () => {
+  usesFocusTrap.value = true
+}
+
+onMounted(() => {
+  Nova.$on('disable-focus-trap', disableModalFocusTrap)
+  Nova.$on('enable-focus-trap', enableModalFocusTrap)
+
+  if (props.show === true) handleVisibilityChange(true)
+})
+
+onBeforeUnmount(() => {
+  document.body.classList.remove('overflow-hidden')
+  Nova.resumeShortcuts()
+
+  Nova.$off('disable-focus-trap', disableModalFocusTrap)
+  Nova.$off('enable-focus-trap', enableModalFocusTrap)
+
+  usesFocusTrap.value = false
+})
+
+const store = useStore()
+
+async function handleVisibilityChange(showing) {
+  if (showing === true) {
+    emit('showing')
+    document.body.classList.add('overflow-hidden')
+    Nova.pauseShortcuts()
+
+    usesFocusTrap.value = true
+  } else {
+    usesFocusTrap.value = false
+
+    emit('closing')
     document.body.classList.remove('overflow-hidden')
     Nova.resumeShortcuts()
-    document.removeEventListener('keydown', this.closeOnEscape)
-  },
+  }
 
-  mounted() {
-    if (this.show === true) {
-      this.handleVisibilityChange(true)
-    }
-  },
-
-  methods: {
-    ...mapMutations(['allowLeavingModal', 'preventLeavingModal']),
-
-    handleVisibilityChange(showing) {
-      this.$nextTick(() => {
-        if (showing === true) {
-          this.$emit('showing')
-          document.body.classList.add('overflow-hidden')
-          Nova.pauseShortcuts()
-          trapFocus(this.$refs.modalContent)
-        } else {
-          this.$emit('closing')
-          document.body.classList.remove('overflow-hidden')
-          Nova.resumeShortcuts()
-        }
-
-        this.allowLeavingModal()
-      })
-    },
-
-    closeOnEscape(event) {
-      if (event.key === 'Escape' && this.show === true) {
-        this.$emit('close-via-escape', event)
-      }
-    },
-  },
-
-  computed: {
-    ...mapGetters(['canLeaveModal']),
-
-    tabIndex() {
-      return this.show ? 0 : -1
-    },
-
-    defaultAttributes() {
-      return omit(this.$attrs, ['class'])
-    },
-
-    sizeClasses() {
-      return {
-        sm: 'max-w-sm',
-        md: 'max-w-md',
-        lg: 'max-w-lg',
-        xl: 'max-w-xl',
-        '2xl': 'max-w-2xl',
-        '3xl': 'max-w-3xl',
-        '4xl': 'max-w-4xl',
-        '5xl': 'max-w-5xl',
-        '6xl': 'max-w-6xl',
-        '7xl': 'max-w-7xl',
-      }
-    },
-
-    contentClasses() {
-      let windowedClasses = this.modalStyle === 'window' ? this.sizeClasses : {}
-
-      return filter([
-        windowedClasses[this.size] ?? null,
-        this.modalStyle === 'fullscreen' ? 'h-full' : '',
-        this.$attrs.class,
-      ])
-    },
-  },
+  store.commit('allowLeavingModal')
 }
+
+const defaultAttributes = computed(() => {
+  return omit(attrs, ['class'])
+})
+
+const sizeClasses = computed(() => {
+  return {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
+    '4xl': 'max-w-4xl',
+    '5xl': 'max-w-5xl',
+    '6xl': 'max-w-6xl',
+    '7xl': 'max-w-7xl',
+  }
+})
+
+const contentClasses = computed(() => {
+  let windowClasses = props.modalStyle === 'window' ? sizeClasses.value : {}
+
+  return filter([
+    windowClasses[props.size] ?? null,
+    props.modalStyle === 'fullscreen' ? 'h-full' : '',
+    attrs.class,
+  ])
+})
 </script>

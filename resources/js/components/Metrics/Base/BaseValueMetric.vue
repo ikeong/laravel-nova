@@ -7,7 +7,7 @@
 
       <SelectControl
         v-if="ranges.length > 0"
-        class="ml-auto w-[6rem] flex-shrink-0"
+        class="ml-auto w-[6rem] shrink-0"
         size="xxs"
         :options="ranges"
         :selected="selectedRangeKey"
@@ -39,10 +39,10 @@
           </span>
         </component>
 
-        <div>
+        <div v-tooltip="`${tooltipFormattedPreviousValue}`">
           <p class="flex items-center font-bold text-sm">
             <svg
-              v-if="increaseOrDecreaseLabel == 'Decrease'"
+              v-if="increaseOrDecreaseLabel === 'Decrease'"
               xmlns="http://www.w3.org/2000/svg"
               class="text-red-500 stroke-current mr-2"
               width="24"
@@ -59,7 +59,7 @@
               />
             </svg>
             <svg
-              v-if="increaseOrDecreaseLabel == 'Increase'"
+              v-if="increaseOrDecreaseLabel === 'Increase'"
               class="text-green-500 stroke-current mr-2"
               width="24"
               height="24"
@@ -75,7 +75,7 @@
               />
             </svg>
 
-            <span v-if="increaseOrDecrease != 0">
+            <span v-if="!(increaseOrDecrease === 0)">
               <span v-if="growthPercentage !== 0">
                 {{ growthPercentage }}%
                 {{ __(increaseOrDecreaseLabel) }}
@@ -85,11 +85,11 @@
             </span>
 
             <span class="text-gray-400 font-semibold" v-else>
-              <span v-if="previous == '0' && value != '0'">
+              <span v-if="previous === '0' && value !== '0'">
                 {{ __('No Prior Data') }}
               </span>
 
-              <span v-if="value == '0' && previous != '0' && !zeroResult">
+              <span v-if="value === '0' && previous !== '0' && !zeroResult">
                 {{ __('No Current Data') }}
               </span>
 
@@ -162,7 +162,7 @@ export default {
     },
 
     increaseOrDecrease() {
-      if (this.previous == 0 || this.previous == null || this.value == 0)
+      if (this.previous === 0 || this.previous == null || this.value === 0)
         return 0
 
       return increaseOrDecrease(this.value, this.previous).toFixed(2)
@@ -194,6 +194,10 @@ export default {
       return this.value == null
     },
 
+    isNullPreviousValue() {
+      return this.previous == null
+    },
+
     formattedValue() {
       if (!this.isNullValue) {
         return (
@@ -206,10 +210,15 @@ export default {
 
     tooltipFormattedValue() {
       if (!this.isNullValue) {
-        return (
-          this.prefix +
-          Nova.formatNumber(new String(this.value), this.tooltipFormat)
-        )
+        return this.value
+      }
+
+      return ''
+    },
+
+    tooltipFormattedPreviousValue() {
+      if (!this.isNullPreviousValue) {
+        return this.previous
       }
 
       return ''

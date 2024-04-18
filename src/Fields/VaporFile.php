@@ -13,15 +13,15 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 /**
  * @method static static make(mixed $name, string|null $attribute = null, callable|null $storageCallback = null)
  */
-class VaporFile extends Field implements StorableContract, DeletableContract, DownloadableContract
+class VaporFile extends Field implements DeletableContract, DownloadableContract, StorableContract
 {
-    use AcceptsTypes,
-        Deletable,
-        HasDownload,
-        HasPreview,
-        HasThumbnail,
-        Storable,
-        SupportsDependentFields;
+    use AcceptsTypes;
+    use Deletable;
+    use HasDownload;
+    use HasPreview;
+    use HasThumbnail;
+    use Storable;
+    use SupportsDependentFields;
 
     /**
      * The field's component.

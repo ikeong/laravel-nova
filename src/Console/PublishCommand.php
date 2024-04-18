@@ -3,7 +3,9 @@
 namespace Laravel\Nova\Console;
 
 use Illuminate\Console\Command;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'nova:publish')]
 class PublishCommand extends Command
 {
     /**

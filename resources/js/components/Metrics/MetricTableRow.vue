@@ -9,7 +9,7 @@
         'text-gray-400 dark:text-gray-600': !row.iconClass,
       }"
     >
-      <Icon :type="row.icon" />
+      <Heroicon :type="row.icon" />
     </td>
 
     <td
@@ -33,12 +33,11 @@
     >
       <div class="flex justify-end items-center text-gray-400">
         <Dropdown>
-          <span class="sr-only">{{ __('Resource Row Dropdown') }}</span>
-          <DropdownTrigger :show-arrow="false">
-            <span class="py-0.5 px-2 rounded">
-              <Icon :solid="true" type="dots-horizontal" />
-            </span>
-          </DropdownTrigger>
+          <Button
+            icon="ellipsis-horizontal"
+            variant="action"
+            :aria-label="__('Resource Row Dropdown')"
+          />
 
           <template #menu>
             <DropdownMenu width="auto" class="px-1">
@@ -66,8 +65,16 @@
 <script>
 import isNull from 'lodash/isNull'
 import omitBy from 'lodash/omitBy'
+import { Button, Icon } from 'laravel-nova-ui'
+import Heroicon from '@/components/Icons/Icon'
 
 export default {
+  components: {
+    Button,
+    Icon,
+    Heroicon,
+  },
+
   props: {
     row: {
       type: Object,

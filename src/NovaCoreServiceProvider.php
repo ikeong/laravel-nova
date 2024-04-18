@@ -99,7 +99,9 @@ class NovaCoreServiceProvider extends ServiceProvider
             $event->listen(RequestReceived::class, function ($event) {
                 Nova::flushState();
                 /** @phpstan-ignore-next-line */
-                Cache::getInstance()->flush();
+                if (class_exists(Cache::class)) {
+                    Cache::getInstance()->flush();
+                }
 
                 $event->sandbox->forgetInstance(ImpersonatesUsers::class);
             });

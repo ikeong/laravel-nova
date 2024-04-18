@@ -1,10 +1,5 @@
 <template>
-  <Modal
-    :show="show"
-    data-testid="confirm-upload-removal-modal"
-    role="alertdialog"
-    size="md"
-  >
+  <Modal :show="show" role="alertdialog" size="md">
     <div
       class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden"
       style="width: 460px"
@@ -20,22 +15,20 @@
           <LinkButton
             dusk="cancel-upload-delete-button"
             type="button"
-            @click.prevent="$emit('close')"
+            @click.prevent="handleClose"
             class="mr-3"
           >
             {{ __('Cancel') }}
           </LinkButton>
 
-          <LoadingButton
+          <Button
             @click.prevent="handleConfirm"
             ref="confirmButton"
             dusk="confirm-upload-delete-button"
-            :disabled="clicked"
-            :processing="clicked"
-            component="DangerButton"
-          >
-            {{ __('Delete') }}
-          </LoadingButton>
+            :loading="working"
+            state="danger"
+            :label="__('Delete')"
+          />
         </div>
       </ModalFooter>
     </div>
@@ -43,25 +36,37 @@
 </template>
 
 <script>
+import { Button } from 'laravel-nova-ui'
+
 export default {
+  components: {
+    Button,
+  },
+
   emits: ['confirm', 'close'],
 
   props: {
     show: { type: Boolean, default: false },
   },
 
-  /**
-   * Mount the component.
-   */
-  mounted() {
-    // this.$refs.confirmButton.focus()
+  data: () => ({ working: false }),
+
+  watch: {
+    show(showing) {
+      if (showing === false) {
+        this.working = false
+      }
+    },
   },
 
-  data: () => ({ clicked: false }),
-
   methods: {
+    handleClose() {
+      this.working = false
+      this.$emit('close')
+    },
+
     handleConfirm() {
-      this.clicked = true
+      this.working = true
       this.$emit('confirm')
     },
   },

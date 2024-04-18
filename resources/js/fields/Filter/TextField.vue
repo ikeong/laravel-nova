@@ -4,8 +4,9 @@
 
     <template #filter>
       <input
-        class="w-full form-control form-input form-input-bordered"
-        v-model="value"
+        class="w-full form-control form-input form-control-bordered"
+        @input="handleChange"
+        :value="value"
         :id="field.uniqueKey"
         :dusk="`${field.uniqueKey}-filter`"
         v-bind="extraAttributes"
@@ -34,39 +35,29 @@ export default {
   emits: ['change'],
 
   props: {
-    resourceName: {
-      type: String,
-      required: true,
-    },
-    filterKey: {
-      type: String,
-      required: true,
-    },
+    resourceName: { type: String, required: true },
+    filterKey: { type: String, required: true },
     lens: String,
   },
 
   data: () => ({
     value: null,
-    debouncedHandleChange: null,
+    debouncedEventEmitter: null,
   }),
 
   created() {
-    this.debouncedHandleChange = debounce(() => this.handleChange(), 500)
+    this.debouncedEventEmitter = debounce(() => this.emitChange(), 500)
     this.setCurrentFilterValue()
   },
 
   mounted() {
+    Nova.log(`Mounting <FilterMenu>`)
     Nova.$on('filter-reset', this.setCurrentFilterValue)
   },
 
   beforeUnmount() {
+    Nova.log(`Unmounting <FilterMenu>`)
     Nova.$off('filter-reset', this.setCurrentFilterValue)
-  },
-
-  watch: {
-    value() {
-      this.debouncedHandleChange()
-    },
   },
 
   methods: {
@@ -74,13 +65,16 @@ export default {
       this.value = this.filter.currentValue
     },
 
-    handleChange() {
-      this.$store.commit(`${this.resourceName}/updateFilterState`, {
+    handleChange(e) {
+      this.value = e.target.value
+      this.debouncedEventEmitter()
+    },
+
+    emitChange() {
+      this.$emit('change', {
         filterClass: this.filterKey,
         value: this.value,
       })
-
-      this.$emit('change')
     },
   },
 

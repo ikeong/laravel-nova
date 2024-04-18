@@ -4,7 +4,9 @@ namespace Laravel\Nova\Console;
 
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Str;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'nova:dashboard')]
 class DashboardCommand extends GeneratorCommand
 {
     use ResolvesStubPath;

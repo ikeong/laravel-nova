@@ -31,6 +31,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     use ConditionallyLoadsAttributes;
     use DelegatesToResource;
     use FillsFields;
+    use HasLifecycleMethods;
     use Makeable;
     use PerformsQueries;
     use PerformsValidation;
@@ -40,7 +41,6 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     use ResolvesFilters;
     use ResolvesLenses;
     use SupportsPolling;
-    use HasLifecycleMethods;
 
     /**
      * The default displayable pivot class name.

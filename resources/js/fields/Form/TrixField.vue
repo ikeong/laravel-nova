@@ -14,7 +14,7 @@
           @change="handleChange"
           @file-added="handleFileAdded"
           @file-removed="handleFileRemoved"
-          :class="{ 'form-input-border-error': hasError }"
+          :class="{ 'form-control-bordered-error': hasError }"
           :with-files="currentField.withFiles"
           v-bind="currentField.extraAttributes"
           :disabled="currentlyIsReadonly"

@@ -9,7 +9,7 @@
       <input
         :id="field.attribute"
         type="text"
-        class="w-full form-control form-input form-input-bordered"
+        class="w-full form-control form-input form-control-bordered"
         :class="errorClasses"
         :placeholder="field.name"
         v-model="value"

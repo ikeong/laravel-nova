@@ -1,5 +1,5 @@
 <template>
-  <PanelItem :index="index" :field="field" :field-name="field.resourceLabel">
+  <PanelItem :index="index" :field="field" :field-name="field.name">
     <template #value>
       <span v-if="field.viewable && field.value">
         <RelationPeek
@@ -13,7 +13,7 @@
             :href="$url(`/resources/${field.resourceName}/${field.morphToId}`)"
             class="link-default"
           >
-            {{ field.value }}
+            {{ field.resourceLabel }}: {{ field.value }}
           </Link>
         </RelationPeek>
 
@@ -22,15 +22,12 @@
           :href="$url(`/resources/${field.resourceName}/${field.morphToId}`)"
           class="link-default"
         >
-          {{ field.value }}
+          {{ field.resourceLabel }}: {{ field.value }}
         </Link>
       </span>
 
-      <p v-else-if="field.value && field.resourceLabel === null">
-        {{ field.morphToType }}: {{ field.value }}
-      </p>
-      <p v-else-if="field.value && field.resourceLabel !== null">
-        {{ field.value }}
+      <p v-else-if="field.value">
+        {{ field.resourceLabel || field.morphToType }}: {{ field.value }}
       </p>
       <p v-else>&mdash;</p>
     </template>

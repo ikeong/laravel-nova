@@ -1,49 +1,51 @@
 <template>
   <div class="h-9" v-if="hasDropDownMenuItems">
-    <Dropdown class="hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-      <span class="sr-only">{{ __('Trash Dropdown') }}</span>
-      <DropdownTrigger class="px-2">
-        <Icon class="text-gray-500 dark:text-gray-400" type="trash" />
-      </DropdownTrigger>
+    <Dropdown>
+      <Button
+        variant="ghost"
+        padding="tight"
+        icon="trash"
+        trailing-icon="chevron-down"
+        :aria-label="__('Trash Dropdown')"
+      />
 
       <template #menu>
-        <DropdownMenu
-          class="divide-y divide-gray-100 dark:divide-gray-800 divide-solid"
-          width="250"
-        >
-          <!-- Delete Menu -->
-          <DropdownMenuItem
-            v-if="shouldShowDeleteItem"
-            as="button"
-            class="border-none"
-            dusk="delete-selected-button"
-            @click.prevent="confirmDeleteSelectedResources"
-          >
-            {{ __(viaManyToMany ? 'Detach Selected' : 'Delete Selected') }}
-            <CircleBadge>{{ selectedResourcesCount }}</CircleBadge>
-          </DropdownMenuItem>
+        <DropdownMenu class="px-1" width="250">
+          <nav class="py-1">
+            <!-- Delete Menu -->
+            <DropdownMenuItem
+              v-if="shouldShowDeleteItem"
+              as="button"
+              class="border-none"
+              dusk="delete-selected-button"
+              @click.prevent="confirmDeleteSelectedResources"
+            >
+              {{ __(viaManyToMany ? 'Detach Selected' : 'Delete Selected') }}
+              <CircleBadge>{{ selectedResourcesCount }}</CircleBadge>
+            </DropdownMenuItem>
 
-          <!-- Restore Resources -->
-          <DropdownMenuItem
-            v-if="shouldShowRestoreItem"
-            as="button"
-            dusk="restore-selected-button"
-            @click.prevent="confirmRestore"
-          >
-            {{ __('Restore Selected') }}
-            <CircleBadge>{{ selectedResourcesCount }}</CircleBadge>
-          </DropdownMenuItem>
+            <!-- Restore Resources -->
+            <DropdownMenuItem
+              v-if="shouldShowRestoreItem"
+              as="button"
+              dusk="restore-selected-button"
+              @click.prevent="confirmRestore"
+            >
+              {{ __('Restore Selected') }}
+              <CircleBadge>{{ selectedResourcesCount }}</CircleBadge>
+            </DropdownMenuItem>
 
-          <!-- Force Delete Resources -->
-          <DropdownMenuItem
-            v-if="shouldShowForceDeleteItem"
-            as="button"
-            dusk="force-delete-selected-button"
-            @click.prevent="confirmForceDeleteSelectedResources"
-          >
-            {{ __('Force Delete Selected') }}
-            <CircleBadge>{{ selectedResourcesCount }}</CircleBadge>
-          </DropdownMenuItem>
+            <!-- Force Delete Resources -->
+            <DropdownMenuItem
+              v-if="shouldShowForceDeleteItem"
+              as="button"
+              dusk="force-delete-selected-button"
+              @click.prevent="confirmForceDeleteSelectedResources"
+            >
+              {{ __('Force Delete Selected') }}
+              <CircleBadge>{{ selectedResourcesCount }}</CircleBadge>
+            </DropdownMenuItem>
+          </nav>
         </DropdownMenu>
       </template>
     </Dropdown>
@@ -82,9 +84,14 @@
 
 <script>
 import find from 'lodash/find'
-import { RouteParameters } from '@/mixins'
+import { Button } from 'laravel-nova-ui'
+import { InteractsWithQueryString } from '@/mixins'
 
 export default {
+  components: {
+    Button,
+  },
+
   emits: [
     'close',
     'deleteAllMatching',
@@ -95,7 +102,7 @@ export default {
     'restoreSelected',
   ],
 
-  mixins: [RouteParameters],
+  mixins: [InteractsWithQueryString],
 
   props: [
     'allMatchingResourceCount',
@@ -220,7 +227,7 @@ export default {
 
   computed: {
     trashedOnlyMode() {
-      return this.route.params[this.trashedParameter] == 'only'
+      return this.queryStringParams[this.trashedParameter] == 'only'
     },
 
     hasDropDownMenuItems() {

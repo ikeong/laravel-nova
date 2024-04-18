@@ -3,8 +3,10 @@
 namespace Laravel\Nova\Console;
 
 use Illuminate\Console\GeneratorCommand;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputOption;
 
+#[AsCommand(name: 'nova:filter')]
 class FilterCommand extends GeneratorCommand
 {
     use ResolvesStubPath;

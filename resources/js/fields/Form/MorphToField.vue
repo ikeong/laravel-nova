@@ -14,11 +14,10 @@
               (viaRelatedResource && !shouldIgnoresViaRelatedResource) ||
               currentlyIsReadonly
             "
-            :data-testid="`${field.attribute}-type`"
             :dusk="`${field.attribute}-type`"
             :value="resourceType"
             @change="refreshResourcesForTypeChange"
-            class="block w-full form-control form-input form-input-bordered form-select mb-3"
+            class="block w-full form-control form-input form-control-bordered form-input mb-3"
           >
             <option value="" selected :disabled="!currentField.nullable">
               {{ __('Choose Type') }}
@@ -34,7 +33,9 @@
             </option>
           </select>
 
-          <IconArrow class="pointer-events-none form-select-arrow" />
+          <IconArrow
+            class="pointer-events-none absolute top-[15px] right-[11px]"
+          />
         </div>
         <label v-else class="flex items-center select-none mt-2">
           {{ __('There are no available options for this resource.') }}
@@ -55,7 +56,7 @@
           <SearchInput
             v-if="useSearchInput"
             class="w-full"
-            :data-testid="`${field.attribute}-search-input`"
+            :dusk="`${field.attribute}-search-input`"
             :disabled="currentlyIsReadonly"
             @input="performResourceSearch"
             @clear="clearResourceSelection"
@@ -116,8 +117,7 @@
           <SelectControl
             v-else
             class="w-full"
-            :class="{ 'form-input-border-error': hasError }"
-            :data-testid="field.attribute"
+            :class="{ 'form-control-bordered-error': hasError }"
             :dusk="`${field.attribute}-select`"
             @change="selectResourceFromSelectControl"
             :disabled="!resourceType || currentlyIsReadonly"
@@ -128,7 +128,7 @@
             <option
               value=""
               :disabled="!currentField.nullable"
-              :selected="selectedResourceId == ''"
+              :selected="selectedResourceId === ''"
             >
               {{ __('Choose') }} {{ fieldTypeName }}
             </option>

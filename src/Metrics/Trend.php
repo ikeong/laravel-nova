@@ -518,7 +518,7 @@ abstract class Trend extends RangedMetric
         $results = array_merge($possibleDateResults, $results->mapWithKeys(function ($result) use ($request, $unit) {
             return [$this->formatAggregateResultDate(
                 $result->date_result, $unit, $request->twelveHourTime === 'true'
-            ) => round($result->aggregate, $this->roundingPrecision, $this->roundingMode)];
+            ) => round($result->aggregate ?? 0, $this->roundingPrecision, $this->roundingMode)];
         })->reject(function ($value, $key) use ($possibleDateKeys) {
             return ! in_array($key, $possibleDateKeys);
         })->all());

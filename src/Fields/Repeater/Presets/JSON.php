@@ -19,15 +19,19 @@ class JSON implements Preset
      */
     public function set(
         NovaRequest $request,
+        string $requestAttribute,
         Model $model,
         string $attribute,
         RepeatableCollection $repeatables,
-        mixed $uniqueField
+        $uniqueField
     ) {
-        $data = new Fluent();
+        // Reset the field attribute in case it's filled already
+        $model->setAttribute($attribute, null);
 
-        $fieldCallbacks = collect($request->{$attribute})
-            ->map(function ($item, $blockKey) use ($model, $attribute, $data, $request, $repeatables) {
+        $fieldCallbacks = collect($request->input($requestAttribute))
+            ->map(function ($item, $blockKey) use ($request, $requestAttribute, $model, $attribute, $repeatables) {
+                $data = new Fluent();
+
                 $block = $repeatables->findByKey($item['type']);
                 $fields = FieldCollection::make($block->fields($request));
 
@@ -36,8 +40,8 @@ class JSON implements Preset
                 $callbacks = $fields
                     ->withoutUnfillable()
                     ->withoutMissingValues()
-                    ->map(function (Field $field) use ($request, $data, $attribute, $blockKey) {
-                        return $field->fillInto($request, $data, $field->attribute, "{$attribute}.{$blockKey}.fields.{$field->attribute}");
+                    ->map(function (Field $field) use ($request, $requestAttribute, $data, $blockKey) {
+                        return $field->fillInto($request, $data, $field->attribute, "{$requestAttribute}.{$blockKey}.fields.{$field->attribute}");
                     })
                     ->filter(function ($callback) {
                         return is_callable($callback);

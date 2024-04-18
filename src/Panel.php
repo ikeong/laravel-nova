@@ -6,6 +6,7 @@ use Illuminate\Http\Resources\ConditionallyLoadsAttributes;
 use Illuminate\Http\Resources\MergeValue;
 use Illuminate\Http\Resources\MissingValue;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Macroable;
 use JsonSerializable;
 use Laravel\Nova\Contracts\RelatableField;
@@ -22,12 +23,12 @@ use Laravel\Nova\Metrics\HasHelpText;
 #[\AllowDynamicProperties]
 class Panel extends MergeValue implements JsonSerializable
 {
-    use ConditionallyLoadsAttributes;
-    use Macroable;
-    use Metable;
-    use Makeable;
-    use HasHelpText;
     use Collapsable;
+    use ConditionallyLoadsAttributes;
+    use HasHelpText;
+    use Macroable;
+    use Makeable;
+    use Metable;
 
     /**
      * The name of the panel.
@@ -35,6 +36,13 @@ class Panel extends MergeValue implements JsonSerializable
      * @var string
      */
     public $name;
+
+    /**
+     * The unique identifier of the panel.
+     *
+     * @var string
+     */
+    public $attribute;
 
     /**
      * The panel fields.
@@ -76,13 +84,15 @@ class Panel extends MergeValue implements JsonSerializable
      *
      * @param  string  $name
      * @param  (\Closure():(object))|object  $fields
+     * @param  string  $attribute
      * @return void
      *
      * @phpstan-param (\Closure():(TPanelFields))|TPanelFields $fields
      */
-    public function __construct($name, $fields = [])
+    public function __construct($name, $fields = [], $attribute = null)
     {
         $this->name = $name;
+        $this->attribute = $attribute ?? Str::slug($name);
 
         parent::__construct($this->prepareFields($fields));
     }
@@ -268,6 +278,19 @@ class Panel extends MergeValue implements JsonSerializable
     }
 
     /**
+     * Set the unique identifier for the panel.
+     *
+     * @param  string  $attribute
+     * @return $this
+     */
+    public function withAttribute($attribute)
+    {
+        $this->attribute = $attribute;
+
+        return $this;
+    }
+
+    /**
      * Prepare the panel for JSON serialization.
      *
      * @return array<string, mixed>
@@ -279,6 +302,7 @@ class Panel extends MergeValue implements JsonSerializable
             'collapsedByDefault' => $this->collapsedByDefault,
             'component' => $this->component(),
             'name' => $this->name,
+            'attribute' => $this->attribute,
             'showToolbar' => $this->showToolbar,
             'limit' => $this->limit,
             'helpText' => $this->getHelpText(),

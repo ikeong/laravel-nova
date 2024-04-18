@@ -9,7 +9,7 @@
       <MarkdownEditor
         ref="theMarkdownEditor"
         v-show="currentlyIsVisible"
-        :class="{ 'form-input-border-error': hasError }"
+        :class="{ 'form-control-bordered-error': hasError }"
         :id="field.attribute"
         :previewer="previewer"
         :uploader="uploader"

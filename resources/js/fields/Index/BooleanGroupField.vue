@@ -1,12 +1,9 @@
 <template>
   <div :class="`text-${field.textAlign}`">
     <Dropdown>
-      <DropdownTrigger
-        class="text-gray-500 inline-flex items-center cursor-pointer"
-        :showArrow="false"
-      >
-        <span class="link-default font-bold">{{ __('View') }}</span>
-      </DropdownTrigger>
+      <Button variant="link">
+        {{ __('View') }}
+      </Button>
 
       <template #menu>
         <DropdownMenu width="auto">
@@ -30,8 +27,13 @@
 <script>
 import filter from 'lodash/filter'
 import map from 'lodash/map'
+import { Button } from 'laravel-nova-ui'
 
 export default {
+  components: {
+    Button,
+  },
+
   props: ['resourceName', 'field'],
 
   data: () => ({
