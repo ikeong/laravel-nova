@@ -56,6 +56,20 @@ class ActionCollection extends Collection
     }
 
     /**
+     * Determine whether the actions available for display can be executed.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @return $this
+     */
+    public function withAuthorizedToRun(NovaRequest $request, $model)
+    {
+        return $this->each(function (Action $action) use ($request, $model) {
+            $action->authorizedToRun($request, $model);
+        });
+    }
+
+    /**
      * Return action counts by type on index.
      *
      * @return array{standalone: mixed, resource: mixed}

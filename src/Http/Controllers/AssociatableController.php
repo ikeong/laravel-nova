@@ -33,9 +33,12 @@ class AssociatableController extends Controller
 
         $shouldReorderAssociatableValues = $field->shouldReorderAssociatableValues($request) && ! $associatedResource::usesScout();
 
+        $query = method_exists($field, 'searchAssociatableQuery')
+            ? $field->searchAssociatableQuery($request, $withTrashed)
+            : $field->buildAssociatableQuery($request, $withTrashed);
+
         return [
-            'resources' => $field->buildAssociatableQuery($request, $withTrashed)
-                        ->take($limit)
+            'resources' => $query->take($limit)
                         ->get()
                         ->mapInto($field->resourceClass)
                         ->filter->authorizedToAdd($request, $request->model())

@@ -34,7 +34,7 @@
           </select>
 
           <IconArrow
-            class="pointer-events-none absolute top-[15px] right-[11px]"
+            class="pointer-events-none absolute text-gray-700 top-[15px] right-[11px]"
           />
         </div>
         <label v-else class="flex items-center select-none mt-2">

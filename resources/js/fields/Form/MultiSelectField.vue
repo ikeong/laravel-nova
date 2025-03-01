@@ -59,7 +59,7 @@ export default {
 
       let selectedOptions = filter(
         this.currentField.options ?? [],
-        v => values.indexOf(v.value) >= 0
+        o => values.includes(o.value) || values.includes(o.value.toString())
       )
 
       this.value = map(selectedOptions, o => o.value)
@@ -97,8 +97,13 @@ export default {
     /**
      * Handle the selection change event.
      */
-    handleChange(value) {
-      this.value = value
+    handleChange(values) {
+      let selectedOptions = filter(
+        this.currentField.options ?? [],
+        o => values.includes(o.value) || values.includes(o.value.toString())
+      )
+
+      this.value = map(selectedOptions, o => o.value)
 
       if (this.field) {
         this.emitFieldValueChange(this.fieldAttribute, this.value)

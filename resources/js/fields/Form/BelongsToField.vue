@@ -175,7 +175,7 @@ export default {
 
           this.getAvailableResources().then(() => this.selectInitialResource())
         }
-      } else if (!this.isSearchable) {
+      } else if (!this.isSearchable && this.currentlyIsVisible) {
         // If we don't need to select an initial resource because the user
         // came to create a resource directly and there's no parent resource,
         // and the field is searchable we'll just load all of the resources.
@@ -350,6 +350,8 @@ export default {
     },
 
     clearResourceSelection() {
+      const id = this.selectedResourceId
+
       this.clearSelection()
 
       if (this.viaRelatedResource && !this.createdViaRelationModal) {
@@ -368,12 +370,24 @@ export default {
         })
       } else {
         if (this.createdViaRelationModal) {
+          this.selectedResourceId = id
           this.createdViaRelationModal = false
+          this.initializingWithExistingResource = true
+        } else if (this.editingExistingResource) {
           this.initializingWithExistingResource = false
         }
 
-        this.getAvailableResources()
+        if (
+          (!this.isSearchable || this.shouldLoadFirstResource) &&
+          this.currentlyIsVisible
+        ) {
+          this.getAvailableResources()
+        }
       }
+    },
+
+    revertSyncedFieldToPreviousValue(field) {
+      this.syncedField.belongsToId = field.belongsToId
     },
 
     onSyncedField() {

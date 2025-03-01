@@ -75,17 +75,7 @@ class InstallCommand extends Command
     {
         $namespace = Str::replaceLast('\\', '', $this->laravel->getNamespace());
 
-        if (class_exists(ApplicationBuilder::class) && is_file(base_path('bootstrap/providers.php'))) {
-            ServiceProvider::addProviderToBootstrapFile("{$namespace}\\Providers\\NovaServiceProvider");
-
-            return;
-        }
-
         $appConfig = file_get_contents(config_path('app.php'));
-
-        if (Str::contains($appConfig, "{$namespace}\\Providers\\NovaServiceProvider::class")) {
-            return;
-        }
 
         $lineEndingCount = [
             "\r\n" => substr_count($appConfig, "\r\n"),
@@ -94,6 +84,30 @@ class InstallCommand extends Command
         ];
 
         $eol = array_keys($lineEndingCount, max($lineEndingCount))[0];
+
+        if (class_exists(ApplicationBuilder::class) && is_file(base_path('bootstrap/providers.php'))) {
+            ServiceProvider::addProviderToBootstrapFile("{$namespace}\\Providers\\NovaServiceProvider");
+
+            if (
+                ! $this->laravel['router']->has('login')
+                && $this->confirm('Would you like to use the Nova login screen as your application\'s default login screen?', true)
+            ) {
+                file_put_contents(
+                    app_path('Providers/NovaServiceProvider.php'),
+                    str_replace(
+                        [$eol.'                ->withAuthenticationRoutes()'.$eol],
+                        [$eol.'                ->withAuthenticationRoutes(default: true)'.$eol],
+                        file_get_contents(app_path('Providers/NovaServiceProvider.php'))
+                    )
+                );
+            }
+
+            return;
+        }
+
+        if (Str::contains($appConfig, "{$namespace}\\Providers\\NovaServiceProvider::class")) {
+            return;
+        }
 
         file_put_contents(config_path('app.php'), str_replace(
             "{$namespace}\\Providers\EventServiceProvider::class,".$eol,

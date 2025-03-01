@@ -3,6 +3,7 @@
 namespace Laravel\Nova\Metrics;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Facades\DB;
 use Laravel\Nova\Util;
 
@@ -22,7 +23,7 @@ abstract class Partition extends Metric
      *
      * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Illuminate\Database\Eloquent\Builder|class-string<\Illuminate\Database\Eloquent\Model>  $model
-     * @param  string  $groupBy
+     * @param  \Illuminate\Database\Query\Expression|string  $groupBy
      * @param  \Illuminate\Database\Query\Expression|string|null  $column
      * @return \Laravel\Nova\Metrics\PartitionResult
      */
@@ -37,7 +38,7 @@ abstract class Partition extends Metric
      * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Illuminate\Database\Eloquent\Builder|class-string<\Illuminate\Database\Eloquent\Model>  $model
      * @param  \Illuminate\Database\Query\Expression|string|null  $column
-     * @param  string  $groupBy
+     * @param  \Illuminate\Database\Query\Expression|string  $groupBy
      * @return \Laravel\Nova\Metrics\PartitionResult
      */
     public function average($request, $model, $column, $groupBy)
@@ -51,7 +52,7 @@ abstract class Partition extends Metric
      * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Illuminate\Database\Eloquent\Builder|class-string<\Illuminate\Database\Eloquent\Model>  $model
      * @param  \Illuminate\Database\Query\Expression|string|null  $column
-     * @param  string  $groupBy
+     * @param  \Illuminate\Database\Query\Expression|string  $groupBy
      * @return \Laravel\Nova\Metrics\PartitionResult
      */
     public function sum($request, $model, $column, $groupBy)
@@ -65,7 +66,7 @@ abstract class Partition extends Metric
      * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Illuminate\Database\Eloquent\Builder|class-string<\Illuminate\Database\Eloquent\Model>  $model
      * @param  \Illuminate\Database\Query\Expression|string|null  $column
-     * @param  string  $groupBy
+     * @param  \Illuminate\Database\Query\Expression|string  $groupBy
      * @return \Laravel\Nova\Metrics\PartitionResult
      */
     public function max($request, $model, $column, $groupBy)
@@ -79,7 +80,7 @@ abstract class Partition extends Metric
      * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Illuminate\Database\Eloquent\Builder|class-string<\Illuminate\Database\Eloquent\Model>  $model
      * @param  \Illuminate\Database\Query\Expression|string|null  $column
-     * @param  string  $groupBy
+     * @param  \Illuminate\Database\Query\Expression|string  $groupBy
      * @return \Laravel\Nova\Metrics\PartitionResult
      */
     public function min($request, $model, $column, $groupBy)
@@ -94,14 +95,15 @@ abstract class Partition extends Metric
      * @param  \Illuminate\Database\Eloquent\Builder|class-string<\Illuminate\Database\Eloquent\Model>  $model
      * @param  string  $function
      * @param  \Illuminate\Database\Query\Expression|string|null  $column
-     * @param  string  $groupBy
+     * @param  \Illuminate\Database\Query\Expression|string  $groupBy
      * @return \Laravel\Nova\Metrics\PartitionResult
      */
     protected function aggregate($request, $model, $function, $column, $groupBy)
     {
         $query = $model instanceof Builder ? $model : (new $model)->newQuery();
+        $grammar = $query->getQuery()->getGrammar();
 
-        $wrappedColumn = $query->getQuery()->getGrammar()->wrap($column ?? $query->getModel()->getQualifiedKeyName());
+        $wrappedColumn = $grammar->wrap($column ?? $query->getModel()->getQualifiedKeyName());
 
         $results = $query->select(
             $groupBy, DB::raw("{$function}({$wrappedColumn}) as aggregate")
@@ -109,8 +111,11 @@ abstract class Partition extends Metric
             return $this->applyFilterQuery($request, $query);
         })->groupBy($groupBy)->get();
 
-        return $this->result($results->mapWithKeys(function ($result) use ($groupBy) {
-            return $this->formatAggregateResult($result, $groupBy);
+        return $this->result($results->mapWithKeys(function ($result) use ($grammar, $groupBy) {
+            return $this->formatAggregateResult(
+                $result,
+                $groupBy instanceof Expression ? $grammar->getValue($groupBy) : $groupBy
+            );
         })->all());
     }
 

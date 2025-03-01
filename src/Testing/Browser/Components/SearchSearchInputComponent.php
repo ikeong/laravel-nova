@@ -13,7 +13,7 @@ class SearchSearchInputComponent extends SearchInputComponent
      * @param  string  $search
      * @return void
      */
-    public function searchInput(Browser $browser, $search)
+    public function searchInput(Browser $browser, $search, int $pause = 500)
     {
         $this->showSearchDropdown($browser);
 

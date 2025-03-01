@@ -21,11 +21,20 @@ class PendingRouteRegistration
      * Register the Nova authentication routes.
      *
      * @param  array<int, class-string|string>  $middleware
+     * @param  bool  $default
      * @return $this
      */
-    public function withAuthenticationRoutes($middleware = ['nova'])
+    public function withAuthenticationRoutes($middleware = ['nova'], bool $default = false)
     {
         Nova::withAuthentication();
+
+        if (
+            $default === true
+            && ! Route::has('login')
+            && Nova::url('/login') !== '/login'
+        ) {
+            Route::redirect('/login', Nova::url('/login'))->name('login');
+        }
 
         Route::namespace('Laravel\Nova\Http\Controllers')
             ->domain(config('nova.domain', null))

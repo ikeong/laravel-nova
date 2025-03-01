@@ -17,7 +17,12 @@
               <span class="ml-1">{{ option.label }}</span>
             </li>
           </ul>
-          <span v-else>{{ this.field.noValueText }}</span>
+          <span
+            v-else
+            class="max-w-xxs space-2 py-3 px-4 rounded-full text-sm leading-tight"
+          >
+            {{ field.noValueText }}
+          </span>
         </DropdownMenu>
       </template>
     </Dropdown>

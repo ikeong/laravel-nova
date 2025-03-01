@@ -44,7 +44,7 @@
     </select>
 
     <IconArrow
-      class="pointer-events-none absolute right-[11px]"
+      class="pointer-events-none absolute text-gray-700 right-[11px]"
       :class="{
         'top-[15px]': size === 'md',
         'top-[13px]': size === 'sm',

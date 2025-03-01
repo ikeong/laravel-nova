@@ -13,12 +13,13 @@ trait HasSearchable
      * @param  \Laravel\Dusk\Browser  $browser
      * @param  string  $attribute
      * @param  string  $search
+     * @param  int  $pause
      * @return void
      */
-    public function searchInput(Browser $browser, $attribute, $search)
+    public function searchInput(Browser $browser, $attribute, $search, int $pause = 500)
     {
-        $browser->whenAvailable(new SearchInputComponent($attribute), function ($browser) use ($search) {
-            $browser->searchInput($search);
+        $browser->whenAvailable(new SearchInputComponent($attribute), function ($browser) use ($search, $pause) {
+            $browser->searchInput($search, $pause);
         });
     }
 

@@ -10,7 +10,7 @@
         v-if="value.length > 0"
         class="overflow-hidden overflow-x-auto relative"
       >
-        <table class="w-full table-default">
+        <table class="w-full table-default table-fixed">
           <tbody
             class="border-t border-b border-gray-100 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700"
           >

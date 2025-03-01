@@ -99,7 +99,7 @@ import { useMarkdownEditing } from '@/composables/useMarkdownEditing'
 
 const { __ } = useLocalization()
 
-const emit = defineEmits(['initialize', 'change'])
+const emit = defineEmits(['initialize', 'change', 'fileRemoved', 'fileAdded'])
 
 const props = defineProps({
   id: { type: String, required: true },

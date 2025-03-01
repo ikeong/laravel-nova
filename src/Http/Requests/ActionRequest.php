@@ -4,6 +4,7 @@ namespace Laravel\Nova\Http\Requests;
 
 use Closure;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Laravel\Nova\Actions\ActionModelCollection;
 use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\FieldCollection;
@@ -114,7 +115,7 @@ class ActionRequest extends NovaRequest
 
         $query = $this->viaRelationship()
                     ? $this->modelsViaRelationship()
-                    : $this->toQueryWithoutScopes()->whereKey(explode(',', $this->resources));
+                    : $this->toQueryWithoutScopes()->whereKey(Arr::wrap($this->resources));
 
         return $query->tap(function ($query) {
             $query->latest($this->model()->getQualifiedKeyName());
@@ -155,10 +156,10 @@ class ActionRequest extends NovaRequest
             /** @var class-string<\Illuminate\Database\Eloquent\Relations\Pivot> $pivotClass */
             $pivotClass = $relation->getPivotClass();
 
-            $relation->wherePivotIn((new $pivotClass())->getKeyName(), explode(',', $this->pivots));
+            $relation->wherePivotIn((new $pivotClass())->getKeyName(), Arr::wrap($this->pivots));
         }
 
-        return $relation->whereIn($this->model()->getQualifiedKeyName(), explode(',', $this->resources));
+        return $relation->whereIn($this->model()->getQualifiedKeyName(), Arr::wrap($this->resources));
     }
 
     /**

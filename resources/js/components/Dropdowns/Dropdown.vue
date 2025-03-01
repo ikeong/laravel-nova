@@ -176,7 +176,7 @@ export default {
                           id: menuLabel.value,
                           'aria-labelledby': dropdownButtonLabel.value,
                           tabindex: '0',
-                          class: 'relative z-[50]',
+                          class: 'relative z-[70]',
                           style: floatingStyles.value,
                           'data-menu-open': menuShown.value,
                           dusk: 'dropdown-menu',
@@ -188,7 +188,7 @@ export default {
                         slots.menu()
                       ),
                       h('div', {
-                        class: 'z-[49] fixed inset-0',
+                        class: 'z-[69] fixed inset-0',
                         dusk: 'dropdown-overlay',
                         onClick: () => (menuShown.value = false),
                       }),

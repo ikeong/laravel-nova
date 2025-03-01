@@ -14,6 +14,8 @@
         :previewer="previewer"
         :uploader="uploader"
         :readonly="currentlyIsReadonly"
+        @file-removed="handleFileRemoved"
+        @file-added="handleFileAdded"
         @initialize="initialize"
         @change="handleChange"
       />
@@ -41,6 +43,9 @@ export default {
 
   beforeUnmount() {
     Nova.$off(this.fieldAttributeValueEventName, this.listenToValueChanges)
+
+    this.clearAttachments()
+    this.clearFilesMarkedForRemoval()
   },
 
   methods: {
@@ -56,6 +61,14 @@ export default {
       this.fillIfVisible(formData, this.fieldAttribute, this.value || '')
 
       this.fillAttachmentDraftId(formData)
+    },
+
+    handleFileRemoved(url) {
+      this.flagFileForRemoval(url)
+    },
+
+    handleFileAdded(url) {
+      this.unflagFileForRemoval(url)
     },
 
     handleChange(value) {

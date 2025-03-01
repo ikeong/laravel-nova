@@ -18,7 +18,7 @@
     >
       <IconArrow
         v-if="shouldShowDropdownArrow && !disabled"
-        class="pointer-events-none form-select-arrow"
+        class="pointer-events-none form-select-arrow text-gray-700"
       />
 
       <slot name="default">
@@ -84,7 +84,7 @@
           v-for="(option, index) in data"
           :dusk="`${dusk}-result-${index}`"
           :key="getTrackedByKey(option)"
-          :ref="index === selectedOptionIndex ? 'selected' : null"
+          :ref="index === selectedOptionIndex ? 'selected' : 'unselected'"
           @click.stop="choose(option)"
           class="px-3 py-1.5 cursor-pointer z-[50]"
           :class="{
@@ -200,10 +200,10 @@ export default {
           })
         })
       } else {
-        this.$refs.search.blur()
         if (this.popper) this.popper.destroy()
 
         Nova.$emit('enable-focus-trap')
+        this.$refs.input.focus()
       }
     },
   },

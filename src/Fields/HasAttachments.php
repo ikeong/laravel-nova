@@ -4,7 +4,7 @@ namespace Laravel\Nova\Fields;
 
 use Illuminate\Support\Str;
 use Laravel\Nova\Fields\Attachments\DeleteAttachments;
-use Laravel\Nova\Fields\Attachments\DetachAttachment;
+use Laravel\Nova\Fields\Attachments\DetachAnyAttachment;
 use Laravel\Nova\Fields\Attachments\DiscardPendingAttachments;
 use Laravel\Nova\Fields\Attachments\PendingAttachment;
 use Laravel\Nova\Fields\Attachments\StorePendingAttachment;
@@ -25,7 +25,7 @@ trait HasAttachments
     /**
      * The callback that should be executed to store file attachments.
      *
-     * @var callable(\Illuminate\Http\Request):string
+     * @var callable(\Illuminate\Http\Request):array{path: string, url: string}
      */
     public $attachCallback;
 
@@ -46,7 +46,7 @@ trait HasAttachments
     /**
      * Specify the callback that should be used to store file attachments.
      *
-     * @param  callable(\Illuminate\Http\Request):string  $callback
+     * @param  callable(\Illuminate\Http\Request):array{path: string, url: string}  $callback
      * @return $this
      */
     public function attach(callable $callback)
@@ -117,10 +117,10 @@ trait HasAttachments
         $this->disk($disk)->path($path);
 
         $this->attach(new StorePendingAttachment($this))
-             ->detach(new DetachAttachment())
-             ->delete(new DeleteAttachments($this))
-             ->discard(new DiscardPendingAttachments())
-             ->prunable();
+            ->detach(new DetachAnyAttachment)
+            ->delete(new DeleteAttachments($this))
+            ->discard(new DiscardPendingAttachments)
+            ->prunable();
 
         return $this;
     }
@@ -140,7 +140,9 @@ trait HasAttachments
 
         $maybeCallback = parent::fillAttribute($request, $requestAttribute, $model, $attribute);
 
-        $attribute = Str::replace('.', '->', "{$this->attribute}DraftId");
+        $attribute = Str::contains($requestAttribute, '.') && $this->attribute !== $requestAttribute
+            ? "{$requestAttribute}DraftId"
+            : Str::replace('.', '->', "{$this->attribute}DraftId");
 
         if (is_callable($maybeCallback)) {
             $callbacks[] = $maybeCallback;

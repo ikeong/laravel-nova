@@ -2,7 +2,6 @@
 
 namespace Laravel\Nova;
 
-use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionCollection;
 use Laravel\Nova\Fields\BelongsToMany;
 use Laravel\Nova\Fields\MorphToMany;
@@ -30,12 +29,12 @@ trait ResolvesActions
                     ->filter->authorizedToSee($request);
 
         if (optional($resource)->exists === true) {
-            return $actions->each->authorizedToRun($request, $resource)->values();
+            return $actions->withAuthorizedToRun($request, $resource)->values();
         }
 
         if (! is_null($resources = $request->selectedResources())) {
             $resources->each(function ($resource) use ($request, $actions) {
-                $actions->each->authorizedToRun($request, $resource);
+                $actions->withAuthorizedToRun($request, $resource);
             });
 
             return $actions->values();
@@ -58,12 +57,12 @@ trait ResolvesActions
                     ->authorizedToSeeOnIndex($request);
 
         if (optional($resource)->exists === true) {
-            return $actions->each->authorizedToRun($request, $resource)->values();
+            return $actions->withAuthorizedToRun($request, $resource)->values();
         }
 
         if (! is_null($resources = $request->selectedResources())) {
             $resources->each(function ($resource) use ($request, $actions) {
-                $actions->each->authorizedToRun($request, $resource);
+                $actions->withAuthorizedToRun($request, $resource);
             });
 
             return $actions->values();
@@ -82,9 +81,7 @@ trait ResolvesActions
     {
         return $this->resolveActions($request)
                     ->authorizedToSeeOnDetail($request)
-                    ->each(function (Action $a) use ($request) {
-                        $a->authorizedToRun($request, $this->resource);
-                    })
+                    ->withAuthorizedToRun($request, $this->resource)
                     ->values();
     }
 
@@ -98,9 +95,7 @@ trait ResolvesActions
     {
         return $this->resolveActions($request)
                     ->authorizedToSeeOnTableRow($request)
-                    ->each(function (Action $a) use ($request) {
-                        $a->authorizedToRun($request, $this->resource);
-                    })
+                    ->withAuthorizedToRun($request, $this->resource)
                     ->values();
     }
 

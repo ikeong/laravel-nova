@@ -294,9 +294,12 @@ class FieldCollection extends Collection
      */
     public function withOnlyFilterableFields()
     {
-        return $this->filter(function ($field) {
-            return $field instanceof FilterableField && $field->attribute !== 'ComputedField';
-        });
+        return $this->whereInstanceOf(Field::class)
+            ->whereInstanceOf(FilterableField::class)
+            ->filter(function ($field) {
+                /** @var \Laravel\Nova\Fields\Field&\Laravel\Nova\Contracts\FilterableField $field */
+                return $field->attribute !== 'ComputedField' && ! is_null($field->filterableCallback);
+            });
     }
 
     /**

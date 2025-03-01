@@ -51,6 +51,7 @@ export default {
     Nova.$off(this.fieldAttributeValueEventName, this.listenToValueChanges)
 
     this.clearAttachments()
+    this.clearFilesMarkedForRemoval()
   },
 
   methods: {
@@ -74,7 +75,8 @@ export default {
      */
     handleFileAdded({ attachment }) {
       if (attachment.file) {
-        const onCompleted = url => {
+        // Trix provides file if it's an upload
+        const onCompleted = (path, url) => {
           return attachment.setAttributes({
             url: url,
             href: url,
@@ -91,11 +93,14 @@ export default {
           onCompleted,
           onUploadProgress,
         })
+      } else {
+        // fx 'undo' which restores a previous attachment without a file upload
+        this.unflagFileForRemoval(attachment.attachment.attributes.values.url)
       }
     },
 
     handleFileRemoved({ attachment: { attachment } }) {
-      this.removeAttachment(attachment.attributes.values.url)
+      this.flagFileForRemoval(attachment.attributes.values.url)
     },
 
     onSyncedField() {

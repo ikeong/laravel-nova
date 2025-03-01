@@ -39,7 +39,7 @@ class StorePendingAttachment
      * Attach a pending attachment to the field.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return string
+     * @return array{path: string, url: string}
      */
     public function __invoke(Request $request)
     {
@@ -49,10 +49,15 @@ class StorePendingAttachment
 
         $disk = $this->field->getStorageDisk() ?? $this->field->getDefaultStorageDisk();
 
-        return Storage::disk($disk)->url(static::$model::create([
+        static::$model::create([
             'draft_id' => $request->draftId,
-            'attachment' => $request->file('attachment')->store($this->field->getStorageDir(), $disk),
+            'attachment' => $path = $request->file('attachment')->store($this->field->getStorageDir(), $disk),
             'disk' => $disk,
-        ])->attachment);
+        ]);
+
+        return [
+            'path' => $path,
+            'url' => Storage::disk($disk)->url($path),
+        ];
     }
 }

@@ -11,10 +11,12 @@
 </template>
 
 <script>
+import { FieldValue } from '@/mixins'
 import forEach from 'lodash/forEach'
-import indexOf from 'lodash/indexOf'
 
 export default {
+  mixins: [FieldValue],
+
   props: ['index', 'resource', 'resourceName', 'resourceId', 'field'],
 
   computed: {
@@ -22,7 +24,7 @@ export default {
       let selected = []
 
       forEach(this.field.options, option => {
-        if (indexOf(this.field.value, option.value.toString()) >= 0) {
+        if (this.isEqualsToValue(option.value)) {
           selected.push(option.label)
         }
       })

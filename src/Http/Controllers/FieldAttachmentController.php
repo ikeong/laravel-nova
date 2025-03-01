@@ -27,9 +27,9 @@ class FieldAttachmentController extends Controller
                         });
 
         /** @phpstan-ignore-next-line */
-        $url = call_user_func($field->attachCallback, $request);
+        $payload = call_user_func($field->attachCallback, $request);
 
-        return response()->json(['url' => $url]);
+        return response()->json($payload);
     }
 
     /**

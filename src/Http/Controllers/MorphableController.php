@@ -38,9 +38,12 @@ class MorphableController extends Controller
 
         $shouldReorderAssociatableValues = $field->shouldReorderAssociatableValues($request) && ! $relatedResource::usesScout();
 
+        $query = method_exists($field, 'searchMorphableQuery')
+            ? $field->searchMorphableQuery($request, $relatedResource, $withTrashed)
+            : $field->buildMorphableQuery($request, $relatedResource, $withTrashed);
+
         return [
-            'resources' => $field->buildMorphableQuery($request, $relatedResource, $withTrashed)
-                                ->take($limit)
+            'resources' => $query->take($limit)
                                 ->get()
                                 ->mapInto($relatedResource)
                                 ->filter->authorizedToAdd($request, $request->model())

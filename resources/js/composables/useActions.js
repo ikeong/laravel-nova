@@ -113,9 +113,9 @@ export function useActions(props, emitter, store) {
           )
         )
 
-        formData.append(
-          'resources',
-          map(selectedResources.value, resource =>
+        each(selectedResources.value, resource =>
+          formData.append(
+            'resources[]',
             isObject(resource) ? resource.id.value : resource
           )
         )
@@ -125,7 +125,7 @@ export function useActions(props, emitter, store) {
           selectedActionIsPivotAction.value === true &&
           pivotIds.length > 0
         ) {
-          formData.append('pivots', pivotIds)
+          each(pivotIds, pivotId => formData.append('pivots[]', pivotId))
         }
       }
 

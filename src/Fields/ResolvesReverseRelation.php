@@ -49,7 +49,7 @@ trait ResolvesReverseRelation
             $resource = $request->newResource();
 
             $this->reverseRelation = $viaResource->availableFields($request)
-                    ->first(function ($field) use ($viaModel, $resource) {
+                    ->filter(function ($field) use ($viaModel, $resource) {
                         if (! isset($field->resourceName) || $field->resourceName !== $resource::uriKey()) {
                             return false;
                         }
@@ -75,6 +75,8 @@ trait ResolvesReverseRelation
                         return $this->getRelationForeignKeyName($relation) === $this->getRelationForeignKeyName(
                             $resource->model()->{$this->attribute}()
                         );
+                    })->first(function ($field) use ($request) {
+                        return $field->attribute === $request->viaRelationship;
                     })->attribute ?? '';
         }
 

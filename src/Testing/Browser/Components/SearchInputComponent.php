@@ -49,15 +49,18 @@ class SearchInputComponent extends Component
      *
      * @param  \Laravel\Dusk\Browser  $browser
      * @param  string  $search
+     * @param  int  $pause
      * @return void
      */
-    public function searchInput(Browser $browser, $search)
+    public function searchInput(Browser $browser, $search, int $pause = 500)
     {
         $this->showSearchDropdown($browser);
 
         $browser->elsewhereWhenAvailable("{$this->selector()}-dropdown", function ($browser) use ($search) {
             $browser->type('input[type="search"]', $search);
         });
+
+        $browser->pause($pause);
     }
 
     /**
@@ -89,9 +92,7 @@ class SearchInputComponent extends Component
      */
     public function searchAndSelectResult(Browser $browser, $search, $resultIndex)
     {
-        $this->searchInput($browser, $search);
-
-        $browser->pause(1500);
+        $this->searchInput($browser, $search, 1500);
 
         $this->selectSearchResult($browser, $resultIndex);
     }
