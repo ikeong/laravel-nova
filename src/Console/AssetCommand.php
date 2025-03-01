@@ -30,31 +30,31 @@ class AssetCommand extends ComponentGeneratorCommand
      *
      * @return void
      */
-    public function handle(Filesystem $files)
+    public function handle()
     {
         if (! $this->hasValidNameArgument()) {
             return;
         }
 
-        $files->copyDirectory(
+        (new Filesystem)->copyDirectory(
             __DIR__.'/asset-stubs',
             $this->componentPath()
         );
 
         // AssetServiceProvider.php replacements...
-        $files->replaceInFile('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/AssetServiceProvider.stub');
-        $files->replaceInFile('{{ component }}', $this->componentName(), $this->componentPath().'/src/AssetServiceProvider.stub');
-        $files->replaceInFile('{{ name }}', $this->componentName(), $this->componentPath().'/src/AssetServiceProvider.stub');
+        $this->replace('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/AssetServiceProvider.stub');
+        $this->replace('{{ component }}', $this->componentName(), $this->componentPath().'/src/AssetServiceProvider.stub');
+        $this->replace('{{ name }}', $this->componentName(), $this->componentPath().'/src/AssetServiceProvider.stub');
 
         // asset.js replacements...
-        $files->replaceInFile('{{ class }}', $this->componentClass(), $this->componentPath().'/resources/js/asset.js');
-        $files->replaceInFile('{{ name }}', $this->componentName(), $this->componentPath().'/resources/js/asset.js');
+        $this->replace('{{ class }}', $this->componentClass(), $this->componentPath().'/resources/js/asset.js');
+        $this->replace('{{ name }}', $this->componentName(), $this->componentPath().'/resources/js/asset.js');
 
         // webpack.mix.js replacements...
-        $files->replaceInFile('{{ name }}', $this->component(), $this->componentPath().'/webpack.mix.js');
+        $this->replace('{{ name }}', $this->component(), $this->componentPath().'/webpack.mix.js');
 
         // Asset composer.json replacements...
-        $this->prepareComposerReplacements($files);
+        $this->prepareComposerReplacements();
 
         // Rename the stubs with the proper file extensions...
         $this->renameStubs();

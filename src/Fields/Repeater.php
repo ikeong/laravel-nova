@@ -2,7 +2,6 @@
 
 namespace Laravel\Nova\Fields;
 
-use Illuminate\Support\Arr;
 use Laravel\Nova\Exceptions\NovaException;
 use Laravel\Nova\Fields\Repeater\Presets\HasMany;
 use Laravel\Nova\Fields\Repeater\Presets\JSON;
@@ -45,43 +44,44 @@ class Repeater extends Field
     public $stacked = false;
 
     /**
-     * Indicates if the field should be sortable.
+     * Indicates whether the field should use all available white-space.
      *
      * @var bool
-     */
-    public $sortable = true;
-
-    /**
-     * Indicates whether the field should use all available white-space.
      */
     public $fullWidth = false;
 
     /**
      * The repeatable types used for the Repeater.
+     *
+     * @var \Laravel\Nova\Fields\Repeater\RepeatableCollection
      */
-    public RepeatableCollection $repeatables;
+    public $repeatables;
 
     /**
-     * The repeatable type unique field.
-     *
+     * @var bool
+     */
+    public $sortable = true;
+
+    /**
      * @var string|null
      */
-    public $uniqueField = null;
+    public $uniqueField;
 
     /**
      * The preset used for the field.
      *
      * @var \Laravel\Nova\Fields\Repeater\Presets\Preset|null
      */
-    public $preset = null;
+    public $preset;
 
     /**
      * Create a new field.
      *
-     * @param  \Stringable|string  $name
+     * @param  string  $name
+     * @param  string|null  $attribute
      * @param  (callable(mixed, mixed, ?string):mixed)|null  $resolveCallback
      */
-    public function __construct($name, ?string $attribute = null, ?callable $resolveCallback = null)
+    public function __construct($name, $attribute = null, callable $resolveCallback = null)
     {
         parent::__construct($name, $attribute, $resolveCallback);
 
@@ -123,9 +123,7 @@ class Repeater extends Field
      */
     public function asJson()
     {
-        return $this->preset(new JSON)
-            ->onlyOnForms()
-            ->showOnDetail();
+        return $this->preset(new JSON);
     }
 
     /**
@@ -138,14 +136,14 @@ class Repeater extends Field
      */
     public function asHasMany($resourceClass = null)
     {
-        /** @var class-string<\Laravel\Nova\Resource>|null $resourceClass */
-        $resourceClass ??= ResourceRelationshipGuesser::guessResource($this->name);
+        /** @var class-string<\Laravel\Nova\Resource>|null $resource */
+        $resource = $resourceClass ?? ResourceRelationshipGuesser::guessResource($this->name);
 
-        if ($resourceClass) {
-            $this->resourceClass = $resourceClass;
-            $this->resourceName = $resourceClass::uriKey();
+        if ($resource) {
+            $this->resourceClass = $resource;
+            $this->resourceName = $resource::uriKey();
 
-            return $this->preset(new HasMany)->onlyOnForms();
+            return $this->preset(new HasMany);
         }
 
         throw NovaException::missingResourceForRepeater($this->name);
@@ -164,9 +162,11 @@ class Repeater extends Field
     /**
      * Resolve the given attribute from the given resource.
      *
-     * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|object|array  $resource
+     * @param  mixed  $resource
+     * @param  string  $attribute
+     * @return mixed
      */
-    protected function resolveAttribute($resource, string $attribute): mixed
+    protected function resolveAttribute($resource, $attribute)
     {
         $request = app(NovaRequest::class);
 
@@ -187,9 +187,12 @@ class Repeater extends Field
     /**
      * Hydrate the given attribute on the model based on the incoming request.
      *
+     * @param  string  $requestAttribute
      * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent  $model
+     * @param  string  $attribute
+     * @return \Closure
      */
-    protected function fillAttributeFromRequest(NovaRequest $request, string $requestAttribute, object $model, string $attribute): callable
+    protected function fillAttributeFromRequest(NovaRequest $request, $requestAttribute, $model, $attribute)
     {
         return $this->getPreset()->set($request, $requestAttribute, $model, $attribute, $this->repeatables, $this->uniqueField);
     }
@@ -201,7 +204,7 @@ class Repeater extends Field
      *
      * @phpstan-return array<string, TFieldValidationRules>
      */
-    public function getCreationRules(NovaRequest $request): array
+    public function getCreationRules(NovaRequest $request)
     {
         return array_merge_recursive(parent::getCreationRules($request), $this->formatRules());
     }
@@ -213,7 +216,7 @@ class Repeater extends Field
      *
      * @phpstan-return array<string, TFieldValidationRules>
      */
-    public function getUpdateRules(NovaRequest $request): array
+    public function getUpdateRules(NovaRequest $request)
     {
         return array_merge_recursive(parent::getUpdateRules($request), $this->formatRules());
     }
@@ -225,7 +228,7 @@ class Repeater extends Field
      *
      * @phpstan-return array<string, TFieldValidationRules>
      */
-    protected function formatRules(): array
+    protected function formatRules()
     {
         $request = app(NovaRequest::class);
 
@@ -233,77 +236,26 @@ class Repeater extends Field
             return [];
         }
 
-        $validationKey = $this->validationKey();
-
         return collect($request->{$this->validationKey()})
-            ->map(fn ($item) => $this->repeatables->findByKey($item['type']))
-            ->flatMap(function (Repeatable $repeatable, $index) use ($request, $validationKey) {
-                $key = "{$validationKey}.{$index}.fields";
-
+            ->map(function ($item) {
+                return $this->repeatables->findByKey($item['type']);
+            })
+            ->flatMap(function (Repeatable $repeatable, $index) use ($request) {
                 return FieldCollection::make($repeatable->fields($request))
-                    ->mapWithKeys(fn (Field $field) => [
-                        "{$key}.{$field->attribute}" => $this->replaceRulesPlaceholder($field->rules, $key),
-                    ]);
+                    ->mapWithKeys(function (Field $field) use ($index) {
+                        return ["{$this->validationKey()}.{$index}.fields.{$field->attribute}" => $field->rules];
+                    });
             })
             ->all();
     }
 
     /**
-     * Get the validation attribute names for the field.
-     *
-     * @return array<string, string>
-     */
-    public function getValidationAttributeNames(NovaRequest $request): array
-    {
-        if ($request->method() === 'GET') {
-            return [];
-        }
-
-        $validationKey = $this->validationKey();
-
-        return collect($request->{$this->validationKey()})
-            ->map(fn ($item) => $this->repeatables->findByKey($item['type']))
-            ->flatMap(function (Repeatable $repeatable, $index) use ($request, $validationKey) {
-                return FieldCollection::make($repeatable->fields($request))
-                    ->mapWithKeys(static fn (Field $field) => [
-                        "{$validationKey}.{$index}.fields.{$field->attribute}" => $field->name,
-                    ]);
-            })->all();
-    }
-
-    /**
-     * Replaces all rules any final formatting of the given validation rules.
-     *
-     *
-     * @return array<array-key, mixed>
-     *
-     * @phpstan-return array<array-key, TFieldValidationRules>
-     */
-    protected function replaceRulesPlaceholder(array $rules, string $replaceWith = ''): array
-    {
-        $replacements = array_filter([
-            '{{repeatable}}' => str_replace(['\'', '"', ',', '\\'], '', $replaceWith),
-        ]);
-
-        if (empty($replacements)) {
-            return $rules;
-        }
-
-        return collect($rules)->map(static function ($fieldRules) use ($replacements) {
-            return collect(Arr::wrap($fieldRules))->map(static function ($rule) use ($replacements) {
-                return is_string($rule)
-                    ? str_replace(array_keys($replacements), array_values($replacements), $rule)
-                    : $rule;
-            })->all();
-        })->flatten()->all();
-    }
-
-    /**
      * Set the unique database column to use when attempting upserts.
      *
+     * @param  string|null  $key
      * @return $this
      */
-    public function uniqueField(?string $key)
+    public function uniqueField($key)
     {
         $this->uniqueField = $key;
 

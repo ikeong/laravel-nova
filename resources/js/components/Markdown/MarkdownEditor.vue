@@ -1,6 +1,6 @@
 <template>
   <div
-    :dusk="attribute"
+    :dusk="id"
     class="bg-white dark:bg-gray-900 rounded-lg"
     :class="{
       'markdown-fullscreen fixed inset-0 z-50 overflow-x-hidden overflow-y-auto':
@@ -61,11 +61,11 @@
         <textarea ref="theTextarea" :class="{ 'bg-gray-100': readonly }" />
       </div>
       <label
-        v-if="uploader"
+        v-if="props.uploader"
         @change.prevent="handleFileSelectionClick"
         class="cursor-pointer block bg-gray-100 dark:bg-gray-700 text-gray-400 text-xxs px-2 py-1"
         :class="{ hidden: isFullScreen }"
-        :dusk="`${attribute}-file-picker`"
+        :dusk="`${id}-file-picker`"
       >
         <span>{{ statusContent }}</span>
         <input
@@ -92,22 +92,17 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import { useLocalization } from '@/composables/useLocalization'
 import { useMarkdownEditing } from '@/composables/useMarkdownEditing'
 
 const { __ } = useLocalization()
 
-const emitter = defineEmits([
-  'initialize',
-  'change',
-  'fileRemoved',
-  'fileAdded',
-])
+const emit = defineEmits(['initialize', 'change'])
 
 const props = defineProps({
-  attribute: { type: String, required: true },
+  id: { type: String, required: true },
   readonly: { type: Boolean, default: false },
   previewer: { type: [Object, Function], required: false, default: null },
   uploader: { type: [Object, Function], required: false, default: null },
@@ -121,27 +116,27 @@ const {
   visualMode,
   previewContent,
   statusContent,
-} = useMarkdownEditing(emitter, props)
+} = useMarkdownEditing(emit, props)
 
 let markdown = null
-const theTextareaRef = useTemplateRef('theTextarea')
-const fileInputRef = useTemplateRef('fileInput')
+const theTextarea = ref(null)
+const fileInput = ref(null)
 
-const handleFileSelectionClick = () => fileInputRef.value.click()
+const handleFileSelectionClick = () => fileInput.value.click()
 const handleFileChange = () => {
   if (props.uploader && markdown.actions) {
-    const items = fileInputRef.value.files
+    const items = fileInput.value.files
 
     for (let i = 0; i < items.length; i++) {
       markdown.actions.uploadAttachment(items[i])
     }
 
-    fileInputRef.value.files = null
+    fileInput.value.files = null
   }
 }
 
 const { startedDrag, handleOnDragEnter, handleOnDragLeave } =
-  useDragAndDrop(emitter)
+  useDragAndDrop(emit)
 
 const handleOnDrop = e => {
   if (props.uploader && markdown.actions) {
@@ -156,9 +151,9 @@ const handleOnDrop = e => {
 }
 
 onMounted(() => {
-  markdown = createMarkdownEditor(this, theTextareaRef)
+  markdown = createMarkdownEditor(this, theTextarea)
 
-  emitter('initialize')
+  emit('initialize')
 })
 
 onBeforeUnmount(() => markdown.unmount())

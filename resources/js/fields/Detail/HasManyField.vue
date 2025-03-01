@@ -5,12 +5,11 @@
     :via-resource="resourceName"
     :via-resource-id="resourceId"
     :via-relationship="field.hasManyRelationship"
-    relationship-type="hasMany"
+    :relationship-type="'hasMany'"
     @actionExecuted="actionExecuted"
     :load-cards="false"
-    :per-page-options="field.perPageOptions || [5]"
+    :initialPerPage="field.perPage || 5"
     :should-override-meta="false"
-    :collapsable="field.collapsable"
   />
 </template>
 
@@ -21,7 +20,8 @@ export default {
   emits: ['actionExecuted'],
 
   props: {
-    ...mapProps(['resourceName', 'resourceId', 'field']),
+    ...mapProps(['resourceId', 'field']),
+    resourceName: {},
     resource: {},
   },
 

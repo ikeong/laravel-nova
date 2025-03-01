@@ -5,10 +5,8 @@
       class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden"
       style="width: 460px"
     >
-      <slot name="header">
-        <ModalHeader v-text="modalTitle" />
-      </slot>
-      <slot name="content">
+      <slot>
+        <ModalHeader v-text="__('Restore Resource')" />
         <ModalContent>
           <p class="leading-normal">
             {{ __('Are you sure you want to restore the selected resources?') }}
@@ -18,15 +16,14 @@
 
       <ModalFooter>
         <div class="ml-auto">
-          <Button
-            variant="link"
-            state="mellow"
+          <LinkButton
+            type="button"
+            dusk="cancel-restore-button"
             @click.prevent="handleClose"
             class="mr-3"
-            dusk="cancel-restore-button"
           >
             {{ __('Cancel') }}
-          </Button>
+          </LinkButton>
 
           <Button
             type="submit"
@@ -42,54 +39,42 @@
   </Modal>
 </template>
 
-<script setup>
-import { mapProps } from '@/mixins'
+<script>
 import { Button } from 'laravel-nova-ui'
-import { computed, ref, watch } from 'vue'
-import { useLocalization } from '@/composables/useLocalization'
-import { useResourceInformation } from '@/composables/useResourceInformation'
-import isNull from 'lodash/isNull'
 
-const { __ } = useLocalization()
-const { resourceInformation } = useResourceInformation()
+export default {
+  components: {
+    Button,
+  },
 
-const emitter = defineEmits(['confirm', 'close'])
+  emits: ['confirm', 'close'],
 
-const working = ref(false)
+  props: {
+    show: { type: Boolean, default: false },
+  },
 
-const props = defineProps({
-  ...mapProps(['resourceName']),
-  show: { type: Boolean, default: false },
-})
+  data: () => ({
+    working: false,
+  }),
 
-watch(
-  () => props.show,
-  showing => {
-    if (showing === false) {
-      working.value = false
-    }
-  }
-)
+  watch: {
+    show(showing) {
+      if (showing === false) {
+        this.working = false
+      }
+    },
+  },
 
-const modalTitle = computed(() => {
-  const resource = resourceInformation(props.resourceName)
+  methods: {
+    handleClose() {
+      this.$emit('close')
+      this.working = false
+    },
 
-  if (isNull(resource)) {
-    return __('Restore Resource')
-  }
-
-  return __('Restore :resource', {
-    resource: resource.singularLabel,
-  })
-})
-
-function handleClose() {
-  emitter('close')
-  working.value = false
-}
-
-function handleConfirm() {
-  emitter('confirm')
-  working.value = true
+    handleConfirm() {
+      this.$emit('confirm')
+      this.working = true
+    },
+  },
 }
 </script>

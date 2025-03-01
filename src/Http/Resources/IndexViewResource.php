@@ -21,9 +21,10 @@ class IndexViewResource extends Resource
         return [
             'label' => $resource::label(),
             'resources' => $paginator->getCollection()->mapInto($resource)->map->serializeForIndex($request),
-            'prevPageUrl' => $paginator->previousPageUrl(),
-            'nextPageUrl' => $paginator->nextPageUrl(),
-            'perPage' => $paginator->perPage(),
+            'prev_page_url' => $paginator->previousPageUrl(),
+            'next_page_url' => $paginator->nextPageUrl(),
+            'per_page' => $paginator->perPage(),
+            'per_page_options' => $resource::perPageOptions(),
             'total' => $total,
             'softDeletes' => $resource::softDeletes(),
             'polling' => $resource::$polling,
@@ -36,13 +37,14 @@ class IndexViewResource extends Resource
     /**
      * Get authorized resource for the request.
      *
+     * @param  \Laravel\Nova\Http\Requests\ResourceIndexRequest  $request
      * @return class-string<\Laravel\Nova\Resource>
      *
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function authorizedResourceForRequest(ResourceIndexRequest $request): string
+    public function authorizedResourceForRequest(ResourceIndexRequest $request)
     {
-        return tap($request->resource(), static function ($resource) use ($request) {
+        return tap($request->resource(), function ($resource) use ($request) {
             abort_unless($resource::authorizedToViewAny($request), 403);
         });
     }

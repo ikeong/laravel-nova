@@ -9,23 +9,35 @@ use Laravel\Dusk\ElementResolver;
 
 class SearchInputComponent extends Component
 {
+    public $attribute;
+
+    public $mode;
+
     /**
      * Create a new component instance.
+     *
+     * @param  string  $attribute
+     * @param  string  $mode
+     * @return void
      */
-    public function __construct(
-        public string $attribute
-    ) {
-        //
+    public function __construct(string $attribute, string $mode = 'input')
+    {
+        $this->attribute = $attribute;
+        $this->mode = $mode;
     }
 
     /**
      * Show the component dropdown.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  string  $search
+     * @return void
      */
-    public function showSearchDropdown(Browser $browser): void
+    public function showSearchDropdown(Browser $browser)
     {
         $resolver = new ElementResolver($browser->driver, 'body');
 
-        $input = $resolver->find("[dusk='{$this->attribute}-search-input-dropdown']");
+        $input = $resolver->find("[dusk='{$this->attribute}-search-{$this->mode}-dropdown']");
 
         if (is_null($input) || ! $input->isDisplayed()) {
             $browser->click('');
@@ -34,22 +46,27 @@ class SearchInputComponent extends Component
 
     /**
      * Search for the given value for a searchable field attribute.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  string  $search
+     * @return void
      */
-    public function searchInput(Browser $browser, string $search, int $pause = 500): void
+    public function searchInput(Browser $browser, $search)
     {
         $this->showSearchDropdown($browser);
 
-        $browser->elsewhereWhenAvailable("{$this->selector()}-dropdown", static function (Browser $browser) use ($search) {
+        $browser->elsewhereWhenAvailable("{$this->selector()}-dropdown", function ($browser) use ($search) {
             $browser->type('input[type="search"]', $search);
         });
-
-        $browser->pause($pause);
     }
 
     /**
      * Reset the searchable field.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @return void
      */
-    public function resetSearchResult(Browser $browser): void
+    public function resetSearchResult(Browser $browser)
     {
         $this->cancelSelectingSearchResult($browser);
 
@@ -64,23 +81,32 @@ class SearchInputComponent extends Component
 
     /**
      * Search and select the searchable field by result index.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  string  $search
+     * @param  int  $resultIndex
+     * @return void
      */
-    public function searchAndSelectResult(Browser $browser, string $search, int $resultIndex): void
+    public function searchAndSelectResult(Browser $browser, $search, $resultIndex)
     {
-        $this->searchInput($browser, $search, 1500);
+        $this->searchInput($browser, $search);
+
+        $browser->pause(1500);
 
         $this->selectSearchResult($browser, $resultIndex);
     }
 
     /**
      * Select the searchable field by result index.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  int  $resultIndex
+     * @return void
      */
-    public function selectSearchResult(Browser $browser, int $resultIndex): void
+    public function selectSearchResult(Browser $browser, $resultIndex)
     {
-        $selector = $this->selector();
-
-        $browser->elseWhereWhenAvailable("{$selector}-dropdown", static function (Browser $browser) use ($selector, $resultIndex) {
-            $browser->whenAvailable("{$selector}-result-{$resultIndex}", static function (Browser $browser) {
+        $browser->elseWhereWhenAvailable("{$this->selector()}-dropdown", function ($browser) use ($resultIndex) {
+            $browser->whenAvailable("{$this->selector()}-result-{$resultIndex}", function ($browser) {
                 $browser->click('')->pause(300);
             });
         });
@@ -88,8 +114,11 @@ class SearchInputComponent extends Component
 
     /**
      * Select the currently highlighted searchable field.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @return void
      */
-    public function cancelSelectingSearchResult(Browser $browser): void
+    public function cancelSelectingSearchResult(Browser $browser)
     {
         $browser->driver->getKeyboard()->sendKeys(WebDriverKeys::ESCAPE);
 
@@ -98,24 +127,35 @@ class SearchInputComponent extends Component
 
     /**
      * Select the currently highlighted searchable field.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @return void
      */
-    public function selectFirstSearchResult(Browser $browser): void
+    public function selectFirstSearchResult(Browser $browser)
     {
         $this->selectSearchResult($browser, 0);
     }
 
     /**
      * Search and select the currently highlighted searchable relation.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  string  $search
+     * @return void
      */
-    public function searchFirstRelation(Browser $browser, string $search): void
+    public function searchFirstRelation(Browser $browser, $search)
     {
         $this->searchAndSelectFirstResult($browser, $search);
     }
 
     /**
      * Search and select the currently highlighted searchable field.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  string  $search
+     * @return void
      */
-    public function searchAndSelectFirstResult(Browser $browser, string $search): void
+    public function searchAndSelectFirstResult(Browser $browser, $search)
     {
         $this->searchAndSelectResult($browser, $search, 0);
     }
@@ -123,6 +163,7 @@ class SearchInputComponent extends Component
     /**
      * Assert on searchable results.
      *
+     * @param  \Laravel\Dusk\Browser  $browser
      * @param  callable(\Laravel\Nova\Browser, string):void  $fieldCallback
      * @return void
      */
@@ -130,10 +171,8 @@ class SearchInputComponent extends Component
     {
         $this->showSearchDropdown($browser);
 
-        $selector = $this->selector();
-
-        $browser->elsewhereWhenAvailable("{$selector}-dropdown", function (Browser $browser) use ($selector, $fieldCallback) {
-            call_user_func($fieldCallback, $browser, $selector);
+        $browser->elsewhereWhenAvailable("{$this->selector()}-dropdown", function ($browser) use ($fieldCallback) {
+            $fieldCallback($browser, $this->selector());
 
             $this->cancelSelectingSearchResult($browser);
         });
@@ -141,20 +180,28 @@ class SearchInputComponent extends Component
 
     /**
      * Assert on searchable results is locked to single result.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  string  $search
+     * @return void
      */
-    public function assertSelectedSearchResult(Browser $browser, string $search): void
+    public function assertSelectedSearchResult(Browser $browser, $search)
     {
         $browser->assertSeeIn("{$this->selector()}-selected", $search);
     }
 
     /**
      * Assert on searchable results is locked to single result.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  string  $search
+     * @return void
      */
-    public function assertSelectedFirstSearchResult(Browser $browser, string $search): void
+    public function assertSelectedFirstSearchResult(Browser $browser, $search)
     {
         $this->assertSelectedSearchResult($browser, $search);
 
-        $this->assertSearchResult($browser, static function (Browser $browser, $attribute) use ($search) {
+        $this->assertSearchResult($browser, function ($browser, $attribute) use ($search) {
             $browser->assertSeeIn("{$attribute}-result-0", $search)
                 ->assertNotPresent("{$attribute}-result-1")
                 ->assertNotPresent("{$attribute}-result-2")
@@ -165,10 +212,13 @@ class SearchInputComponent extends Component
 
     /**
      * Assert on searchable results is empty.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @return void
      */
-    public function assertEmptySearchResult(Browser $browser): void
+    public function assertEmptySearchResult(Browser $browser)
     {
-        $this->assertSearchResult($browser, static function (Browser $browser, $attribute) {
+        $this->assertSearchResult($browser, function ($browser, $attribute) {
             $browser->assertNotPresent("{$attribute}-result-0")
                 ->assertNotPresent("{$attribute}-result-1")
                 ->assertNotPresent("{$attribute}-result-2")
@@ -179,10 +229,14 @@ class SearchInputComponent extends Component
 
     /**
      * Assert on searchable results has the search value.
+     *
+     * @param  \Laravel\Dusk\Browser  $browser
+     * @param  string|array  $search
+     * @return void
      */
-    public function assertSearchResultContains(Browser $browser, string|array $search): void
+    public function assertSearchResultContains(Browser $browser, $search)
     {
-        $this->assertSearchResult($browser, static function (Browser $browser, $attribute) use ($search) {
+        $this->assertSearchResult($browser, function ($browser, $attribute) use ($search) {
             foreach (Arr::wrap($search) as $keyword) {
                 $browser->assertSeeIn("{$attribute}-results", $keyword);
             }
@@ -192,11 +246,13 @@ class SearchInputComponent extends Component
     /**
      * Assert on searchable results doesn't has the search value.
      *
+     * @param  \Laravel\Dusk\Browser  $browser
      * @param  string|array  $search
+     * @return void
      */
-    public function assertSearchResultDoesNotContains(Browser $browser, string $search): void
+    public function assertSearchResultDoesNotContains(Browser $browser, $search)
     {
-        $this->assertSearchResult($browser, static function (Browser $browser, $attribute) use ($search) {
+        $this->assertSearchResult($browser, function ($browser, $attribute) use ($search) {
             foreach (Arr::wrap($search) as $keyword) {
                 $browser->assertDontSeeIn("{$attribute}-results", $keyword);
             }
@@ -206,6 +262,7 @@ class SearchInputComponent extends Component
     /**
      * Assert that the current page contains this component.
      *
+     * @param  \Laravel\Dusk\Browser  $browser
      * @return void
      */
     public function assert(Browser $browser)
@@ -215,9 +272,11 @@ class SearchInputComponent extends Component
 
     /**
      * Get the root selector associated with this component.
+     *
+     * @return string
      */
-    public function selector(): string
+    public function selector()
     {
-        return "@{$this->attribute}-search-input";
+        return "@{$this->attribute}-search-{$this->mode}";
     }
 }

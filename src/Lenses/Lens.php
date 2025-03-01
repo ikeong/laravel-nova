@@ -3,12 +3,10 @@
 namespace Laravel\Nova\Lenses;
 
 use ArrayAccess;
-use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Contracts\Routing\UrlRoutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\ConditionallyLoadsAttributes;
 use Illuminate\Http\Resources\DelegatesToResource;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use JsonSerializable;
 use Laravel\Nova\AuthorizedToSee;
@@ -59,22 +57,18 @@ abstract class Lens implements ArrayAccess, JsonSerializable, UrlRoutable
     public static $search = [];
 
     /**
-     * The pagination per-page options used for this lens.
-     *
-     * @var int|array<int, int>|null
-     */
-    public static $perPageOptions = null;
-
-    /**
      * Execute the query for the lens.
      *
-     * @return \Illuminate\Contracts\Database\Eloquent\Builder|\Illuminate\Contracts\Pagination\Paginator
+     * @param  \Laravel\Nova\Http\Requests\LensRequest  $request
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return mixed
      */
-    abstract public static function query(LensRequest $request, Builder $query);
+    abstract public static function query(LensRequest $request, $query);
 
     /**
      * Get the fields displayed by the lens.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return array<int, \Laravel\Nova\Fields\Field>
      */
     abstract public function fields(NovaRequest $request);
@@ -126,6 +120,7 @@ abstract class Lens implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Get the actions available on the lens.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return array<int, \Laravel\Nova\Actions\Action>
      */
     public function actions(NovaRequest $request)
@@ -138,11 +133,11 @@ abstract class Lens implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Resolve the given fields to their values.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return \Laravel\Nova\Fields\FieldCollection<int, \Laravel\Nova\Fields\Field>
      */
     public function resolveFields(NovaRequest $request)
     {
-        /** @phpstan-ignore return.type */
         return $this->availableFields($request)
             ->filterForIndex($request, $this->resource)
             ->withoutListableFields()
@@ -153,19 +148,21 @@ abstract class Lens implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Resolve the filterable fields.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return \Laravel\Nova\Fields\FieldCollection<int, \Laravel\Nova\Fields\Field&\Laravel\Nova\Contracts\FilterableField>
      */
     public function filterableFields(NovaRequest $request)
     {
         return $this->availableFields($request)
-            ->flattenStackedFields()
-            ->withOnlyFilterableFields()
-            ->authorized($request);
+                    ->flattenStackedFields()
+                    ->withOnlyFilterableFields()
+                    ->authorized($request);
     }
 
     /**
      * Get the fields that are available for the given request.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return \Laravel\Nova\Fields\FieldCollection
      */
     public function availableFields(NovaRequest $request)
@@ -191,20 +188,6 @@ abstract class Lens implements ArrayAccess, JsonSerializable, UrlRoutable
     public static function searchableColumns()
     {
         return static::$search;
-    }
-
-    /**
-     * The pagination per-page options configured for this lens.
-     *
-     * @return array<int, int>|null
-     */
-    public static function perPageOptions()
-    {
-        return transform(
-            static::$perPageOptions,
-            static fn ($perPageOptions) => Arr::wrap($perPageOptions),
-            null,
-        );
     }
 
     /**

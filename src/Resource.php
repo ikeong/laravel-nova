@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\ConditionallyLoadsAttributes;
 use Illuminate\Http\Resources\DelegatesToResource;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -22,11 +21,8 @@ use Laravel\Scout\Searchable;
 /**
  * @template TModel of \Illuminate\Database\Eloquent\Model
  *
- * @phpstan-type TFields \Illuminate\Http\Resources\MissingValue|\Laravel\Nova\Fields\Field|\Laravel\Nova\Panel|\Laravel\Nova\ResourceToolElement
- *
  * @mixin TModel
  *
- * @method static static make(\Illuminate\Database\Eloquent\Model|null $resource)
  * @method mixed getKey()
  */
 abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
@@ -51,7 +47,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
      *
      * @var string
      */
-    public const DEFAULT_PIVOT_NAME = 'Pivot';
+    const DEFAULT_PIVOT_NAME = 'Pivot';
 
     /**
      * The visual style used for the table. Available options are 'tight' and 'default'.
@@ -77,7 +73,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * The logical group associated with the resource.
      *
-     * @var \Stringable|string
+     * @var string
      */
     public static $group = 'Other';
 
@@ -152,27 +148,18 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     public static $searchable = true;
 
     /**
-     * The pagination per-page options used the resource index.
+     * The per-page options used the resource index.
      *
-     * @var int|array<int, int>|null
+     * @var array
      */
     public static $perPageOptions = [25, 50, 100];
 
     /**
-     * The pagination per-page options used the resource via relationship.
-     *
-     * @var int
-     *
-     * @deprecated use `$perPageViaRelationshipOptions` instead.
-     */
-    public static $perPageViaRelationship = 5;
-
-    /**
      * The number of resources to show per page via relationships.
      *
-     * @var int|array<int, int>|null
+     * @var int
      */
-    public static $perPageViaRelationshipOptions = null;
+    public static $perPageViaRelationship = 5;
 
     /**
      * The cached soft deleting statuses for various resources.
@@ -231,6 +218,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Get the fields displayed by the resource.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return array
      */
     abstract public function fields(NovaRequest $request);
@@ -262,10 +250,10 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
 
         return new static($model->replicate(
             $this->deletableFields(resolve(NovaRequest::class))
-                ->reject(static function ($field) {
+                ->reject(function ($field) {
                     $uses = trait_uses_recursive($field);
 
-                    /** @phpstan-ignore property.notFound */
+                    /** @phpstan-ignore-next-line */
                     return isset($uses[HasAttachments::class]) && $field->withFiles === false;
                 })
                 ->pluck('attribute')
@@ -276,7 +264,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Get the logical group associated with the resource.
      *
-     * @return \Stringable|string
+     * @return string
      */
     public static function group()
     {
@@ -286,6 +274,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Determine if this resource is available for navigation.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return bool
      */
     public static function availableForNavigation(Request $request)
@@ -323,7 +312,8 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Determine whether the global search links will take the user to the detail page.
      *
-     * @return \Stringable|string
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @return string
      */
     public function globalSearchLink(NovaRequest $request)
     {
@@ -355,7 +345,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Get the displayable label of the resource.
      *
-     * @return \Stringable|string
+     * @return string
      */
     public static function label()
     {
@@ -365,7 +355,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Get the displayable singular label of the resource.
      *
-     * @return \Stringable|string
+     * @return string
      */
     public static function singularLabel()
     {
@@ -375,7 +365,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Get the value that should be displayed to represent the resource.
      *
-     * @return \Stringable|string
+     * @return string
      */
     public function title()
     {
@@ -385,17 +375,17 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Get the search result subtitle for the resource.
      *
-     * @return \Stringable|string|null
+     * @return string|null
      */
     public function subtitle()
     {
-        return null;
+        //
     }
 
     /**
      * Get the text for the create resource button.
      *
-     * @return \Stringable|string|null
+     * @return string|null
      */
     public static function createButtonLabel()
     {
@@ -405,7 +395,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Get the text for the update resource button.
      *
-     * @return \Stringable|string|null
+     * @return string|null
      */
     public static function updateButtonLabel()
     {
@@ -438,6 +428,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Get meta information about this resource for client side consumption.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return array<string, mixed>
      */
     public static function additionalInformation(Request $request)
@@ -452,34 +443,13 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
      */
     public static function perPageOptions()
     {
-        return transform(
-            static::$perPageOptions,
-            static fn ($perPageOptions) => Arr::wrap($perPageOptions),
-            [static::newModel()->getPerPage()],
-        );
-    }
-
-    /**
-     * The pagination per-page options configured for this resource via relationship.
-     *
-     * @return array<int, int>
-     */
-    public static function perPageViaRelationshipOptions()
-    {
-        if (is_null(static::$perPageViaRelationshipOptions) && is_int(static::$perPageViaRelationship)) {
-            static::$perPageViaRelationshipOptions = [static::$perPageViaRelationship];
-        }
-
-        return transform(
-            static::$perPageViaRelationshipOptions,
-            static fn ($perPageOptions) => Arr::wrap($perPageOptions),
-            [5],
-        );
+        return static::$perPageOptions;
     }
 
     /**
      * Indicates whether Nova should check for modifications between viewing and updating a resource.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return bool
      */
     public static function trafficCop(Request $request)
@@ -490,6 +460,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Prepare the resource for JSON serialization.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Illuminate\Support\Collection<int, \Laravel\Nova\Fields\Field>  $fields
      * @return array<string, mixed>
      */
@@ -515,6 +486,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Prepare the resource for JSON serialization.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Laravel\Nova\Resource  $resource
      * @return array<string, mixed>
      */
@@ -537,11 +509,11 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Prepare the resource for JSON serialization.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return array<string, mixed>
      */
     public function serializeForPreview(NovaRequest $request)
     {
-        /** @phpstan-ignore argument.type */
         return array_merge($this->serializeWithId($this->previewFields($request)), [
             'title' => $this->title(),
             'softDeleted' => $this->isSoftDeleted(),
@@ -551,6 +523,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Prepare the resource for JSON serialization.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return array<string, mixed>
      */
     public function serializeForPeeking(NovaRequest $request)
@@ -564,6 +537,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Determine if the resource may be updated, factoring in attachments.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return bool
      */
     protected function authorizedToUpdateForSerialization(NovaRequest $request)
@@ -581,6 +555,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Determine if the resource may be deleted, factoring in detachments.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return bool
      */
     protected function authorizedToDeleteForSerialization(NovaRequest $request)
@@ -635,10 +610,11 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Return the location to redirect the user after creation.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Laravel\Nova\Resource  $resource
      * @return \Laravel\Nova\URL|string
      */
-    public static function redirectAfterCreate(NovaRequest $request, Resource $resource)
+    public static function redirectAfterCreate(NovaRequest $request, $resource)
     {
         return '/resources/'.static::uriKey().'/'.$resource->getKey();
     }
@@ -646,10 +622,11 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Return the location to redirect the user after update.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Laravel\Nova\Resource  $resource
      * @return \Laravel\Nova\URL|string
      */
-    public static function redirectAfterUpdate(NovaRequest $request, Resource $resource)
+    public static function redirectAfterUpdate(NovaRequest $request, $resource)
     {
         return '/resources/'.static::uriKey().'/'.$resource->getKey();
     }
@@ -657,6 +634,7 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     /**
      * Return the location to redirect the user after deletion.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return \Laravel\Nova\URL|string|null
      */
     public static function redirectAfterDelete(NovaRequest $request)
@@ -705,20 +683,9 @@ abstract class Resource implements ArrayAccess, JsonSerializable, UrlRoutable
     }
 
     /**
-     * Get the click action to use when clicking on the resource in the table.
-     *
-     * Can be one of: 'detail' (default), 'edit', 'select', 'preview', or 'ignore'.
-     *
-     * @return string
-     */
-    public static function clickAction()
-    {
-        return static::$clickAction;
-    }
-
-    /**
      * Return the menu item that should represent the resource.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Laravel\Nova\Menu\MenuItem
      */
     public function menu(Request $request)

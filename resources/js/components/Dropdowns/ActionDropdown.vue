@@ -18,10 +18,10 @@
     <component
       v-if="responseModalVisible"
       :show="responseModalVisible"
-      :is="actionModalReponseData?.component"
+      :is="actionResponseData?.modal"
       @confirm="handleResponseModalConfirm"
       @close="handleResponseModalClose"
-      :data="actionModalReponseData?.payload ?? {}"
+      :data="actionResponseData"
     />
 
     <Dropdown>
@@ -74,15 +74,15 @@
 </template>
 
 <script setup>
-import { Button } from 'laravel-nova-ui'
-import { useStore } from 'vuex'
 import { useActions } from '@/composables/useActions'
+import { useStore } from 'vuex'
+const store = useStore()
+import { Button } from 'laravel-nova-ui'
 import DropdownMenuHeading from './DropdownMenuHeading.vue'
 
 const emitter = defineEmits(['actionExecuted'])
 
 const props = defineProps({
-  resource: {},
   resourceName: {},
   viaResource: {},
   viaResourceId: {},
@@ -95,8 +95,6 @@ const props = defineProps({
   showHeadings: { type: Boolean, default: false },
 })
 
-const store = useStore()
-
 const {
   errors,
   actionModalVisible,
@@ -108,7 +106,7 @@ const {
   selectedAction,
   working,
   executeAction,
-  actionModalReponseData,
+  actionResponseData,
 } = useActions(props, emitter, store)
 
 const runAction = () => executeAction(() => emitter('actionExecuted'))

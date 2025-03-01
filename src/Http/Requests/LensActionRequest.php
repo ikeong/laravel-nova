@@ -2,8 +2,7 @@
 
 namespace Laravel\Nova\Http\Requests;
 
-use Illuminate\Contracts\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
 use LogicException;
 
 class LensActionRequest extends ActionRequest
@@ -12,11 +11,12 @@ class LensActionRequest extends ActionRequest
 
     /**
      * Transform the request into a query.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    #[\Override]
-    public function toQuery(): Builder
+    public function toQuery()
     {
-        return tap($this->lens()->query(LensRequest::createFrom($this), $this->newSearchQuery()), static function ($query) {
+        return tap($this->lens()->query(LensRequest::createFrom($this), $this->newSearchQuery()), function ($query) {
             if (! $query instanceof Builder) {
                 throw new LogicException('Lens must return an Eloquent query instance in order to apply actions.');
             }
@@ -25,21 +25,23 @@ class LensActionRequest extends ActionRequest
 
     /**
      * Transform the request into a query without scope.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    #[\Override]
-    public function toQueryWithoutScopes(): Builder
+    public function toQueryWithoutScopes()
     {
         return $this->toQuery();
     }
 
     /**
      * Get the all actions for the request.
+     *
+     * @return \Illuminate\Support\Collection
      */
-    #[\Override]
-    protected function resolveActions(): Collection
+    protected function resolveActions()
     {
         return $this->isPivotAction()
-            ? $this->lens()->resolvePivotActions($this)
-            : $this->lens()->resolveActions($this);
+                    ? $this->lens()->resolvePivotActions($this)
+                    : $this->lens()->resolveActions($this);
     }
 }

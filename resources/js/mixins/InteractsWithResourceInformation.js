@@ -1,35 +1,40 @@
-import { useResourceInformation } from '../composables/useResourceInformation'
-
-const { resourceInformation, viaResourceInformation, authorizedToCreate } =
-  useResourceInformation()
+import find from 'lodash/find'
 
 export default {
   computed: {
     /**
      * Get the resource information object for the current resource.
-     *
-     * @returns {object|null}
      */
     resourceInformation() {
-      return resourceInformation(this.resourceName)
+      return find(Nova.config('resources'), resource => {
+        return resource.uriKey === this.resourceName
+      })
     },
 
     /**
      * Get the resource information object for the current resource.
-     *
-     * @returns {object|null}
      */
     viaResourceInformation() {
-      return viaResourceInformation(this.viaResource)
+      if (!this.viaResource) {
+        return
+      }
+
+      return find(Nova.config('resources'), resource => {
+        return resource.uriKey === this.viaResource
+      })
     },
 
     /**
      * Determine if the user is authorized to create the current resource.
-     *
-     * @returns {boolean}
      */
     authorizedToCreate() {
-      return authorizedToCreate(this.resourceName, this.relationshipType)
+      if (
+        ['hasOneThrough', 'hasManyThrough'].indexOf(this.relationshipType) >= 0
+      ) {
+        return false
+      }
+
+      return this.resourceInformation?.authorizedToCreate || false
     },
   },
 }

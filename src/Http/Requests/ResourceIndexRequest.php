@@ -11,8 +11,10 @@ class ResourceIndexRequest extends NovaRequest
 
     /**
      * Get the paginator instance for the index request.
+     *
+     * @return array
      */
-    public function searchIndex(): array
+    public function searchIndex()
     {
         return app()->make(QueryBuilder::class, [$this->resource()])->search(
             $this, $this->newQuery(), $this->search,
@@ -22,8 +24,10 @@ class ResourceIndexRequest extends NovaRequest
 
     /**
      * Get the count of the resources.
+     *
+     * @return int
      */
-    public function toCount(): int
+    public function toCount()
     {
         return app()->make(QueryBuilder::class, [$this->resource()])->search(
             $this, $this->newQuery(), $this->search,
@@ -33,14 +37,23 @@ class ResourceIndexRequest extends NovaRequest
 
     /**
      * Get per page.
+     *
+     * @return int
      */
-    public function perPage(): int
+    public function perPage()
     {
-        $resourceClass = $this->resource();
+        $resource = $this->resource();
 
-        return (int) transform(
-            $this->viaRelationship() ? $resourceClass::perPageViaRelationshipOptions() : $resourceClass::perPageOptions(),
-            fn ($perPageOptions) => in_array($this->perPage, $perPageOptions) ? $this->perPage : $perPageOptions[0],
-        );
+        if ($this->viaRelationship()) {
+            return (int) $resource::$perPageViaRelationship;
+        }
+
+        $perPageOptions = $resource::perPageOptions();
+
+        if (empty($perPageOptions)) {
+            $perPageOptions = [$resource::newModel()->getPerPage()];
+        }
+
+        return (int) in_array($this->perPage, $perPageOptions) ? $this->perPage : $perPageOptions[0];
     }
 }

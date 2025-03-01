@@ -5,16 +5,17 @@ namespace Laravel\Nova\Fields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Laravel\Nova\Contracts\FilterableField;
+use Laravel\Nova\Contracts\QueryBuilder;
 use Laravel\Nova\Contracts\RelatableField;
-use Laravel\Nova\Fields\Filters\BelongsToFilter;
+use Laravel\Nova\Fields\Filters\EloquentFilter;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Http\Requests\ResourceIndexRequest;
-use Laravel\Nova\Nova;
 use Laravel\Nova\Resource;
 use Laravel\Nova\Rules\Relatable;
+use Laravel\Nova\TrashedStatus;
 use Laravel\Nova\Util;
-use Stringable;
 
 /**
  * @method static static make(mixed $name, string|null $attribute = null, string|null $resource = null)
@@ -29,7 +30,6 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     use ResolvesReverseRelation;
     use Searchable;
     use SupportsDependentFields;
-    use SupportsWithTrashedRelatables;
 
     /**
      * The field's component.
@@ -57,7 +57,7 @@ class BelongsTo extends Field implements FilterableField, RelatableField
      *
      * @var \Laravel\Nova\Resource|null
      */
-    public $belongsToResource = null;
+    public $belongsToResource;
 
     /**
      * The name of the Eloquent "belongs to" relationship.
@@ -71,48 +71,56 @@ class BelongsTo extends Field implements FilterableField, RelatableField
      *
      * @var string|int|null
      */
-    public $belongsToId = null;
+    public $belongsToId;
 
     /**
      * Indicates if the related resource can be viewed.
      *
      * @var bool|null
      */
-    public $viewable = null;
+    public $viewable;
 
     /**
      * The callback that should be run when the field is filled.
      *
-     * @var callable(\Laravel\Nova\Http\Requests\NovaRequest, mixed):void
+     * @var \Closure(\Laravel\Nova\Http\Requests\NovaRequest, mixed):void
      */
     public $filledCallback;
 
     /**
      * The attribute that is the inverse of this relationship.
      *
-     * @var string|null
+     * @var string
      */
-    public $inverse = null;
+    public $inverse;
 
     /**
      * The displayable singular label of the relation.
      *
-     * @var \Stringable|string
+     * @var string
      */
     public $singularLabel;
 
     /**
+     * Indicates whether the field should display the "With Trashed" option.
+     *
+     * @var bool
+     */
+    public $displaysWithTrashed = true;
+
+    /**
      * Create a new field.
      *
-     * @param  \Stringable|string  $name
+     * @param  string  $name
+     * @param  string|null  $attribute
      * @param  class-string<\Laravel\Nova\Resource>|null  $resource
      * @return void
      */
-    public function __construct($name, ?string $attribute = null, ?string $resource = null)
+    public function __construct($name, $attribute = null, $resource = null)
     {
         parent::__construct($name, $attribute);
 
-        $resource ??= ResourceRelationshipGuesser::guessResource($name);
+        $resource = $resource ?? ResourceRelationshipGuesser::guessResource($name);
 
         $this->resourceClass = $resource;
         $this->resourceName = $resource::uriKey();
@@ -122,16 +130,20 @@ class BelongsTo extends Field implements FilterableField, RelatableField
 
     /**
      * Get the relationship name.
+     *
+     * @return string
      */
-    public function relationshipName(): string
+    public function relationshipName()
     {
         return $this->belongsToRelationship;
     }
 
     /**
      * Get the relationship type.
+     *
+     * @return string
      */
-    public function relationshipType(): string
+    public function relationshipType()
     {
         return 'belongsTo';
     }
@@ -142,7 +154,6 @@ class BelongsTo extends Field implements FilterableField, RelatableField
      * @param  \Illuminate\Http\Request&\Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return bool
      */
-    #[\Override]
     public function authorize(Request $request)
     {
         return $this->isNotRedundant($request) && parent::authorize($request);
@@ -152,8 +163,11 @@ class BelongsTo extends Field implements FilterableField, RelatableField
      * Determine if the field is not redundant.
      *
      * Ex: Is this a "user" belongs to field in a blog post list being shown on the "user" detail page.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @return bool
      */
-    public function isNotRedundant(NovaRequest $request): bool
+    public function isNotRedundant(NovaRequest $request)
     {
         return ! $request instanceof ResourceIndexRequest || ! $this->isReverseRelation($request);
     }
@@ -161,10 +175,11 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     /**
      * Resolve the field's value.
      *
-     * @param  \Laravel\Nova\Resource|\Illuminate\Database\Eloquent\Model|object  $resource
+     * @param  mixed  $resource
+     * @param  string|null  $attribute
+     * @return void
      */
-    #[\Override]
-    public function resolve($resource, ?string $attribute = null): void
+    public function resolve($resource, $attribute = null)
     {
         $value = null;
 
@@ -189,8 +204,11 @@ class BelongsTo extends Field implements FilterableField, RelatableField
 
     /**
      * Resolve dependent field value.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @return mixed
      */
-    public function resolveDependentValue(NovaRequest $request): mixed
+    public function resolveDependentValue(NovaRequest $request)
     {
         return $this->belongsToId ?? $this->resolveDefaultValue($request);
     }
@@ -198,6 +216,7 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     /**
      * Define the callback that should be used to resolve the field's value.
      *
+     * @param  callable  $displayCallback
      * @return $this
      */
     public function displayUsing(callable $displayCallback)
@@ -207,29 +226,32 @@ class BelongsTo extends Field implements FilterableField, RelatableField
 
     /**
      * Get the validation rules for this field.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @return array
      */
-    #[\Override]
-    public function getRules(NovaRequest $request): array
+    public function getRules(NovaRequest $request)
     {
         $query = $this->buildAssociatableQuery(
-            $request, $this->resourceClass, $request->{$this->attribute.'_trashed'} === 'true'
+            $request, $request->{$this->attribute.'_trashed'} === 'true'
         )->toBase();
 
         return array_merge_recursive(parent::getRules($request), [
-            $this->attribute => [
+            $this->attribute => array_filter([
                 $this->nullable ? 'nullable' : 'required',
-                new Relatable($request, $query, $this),
-            ],
+                new Relatable($request, $query),
+            ]),
         ]);
     }
 
     /**
      * Hydrate the given attribute on the model based on the incoming request.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent  $model
+     * @return void
      */
-    #[\Override]
-    public function fill(NovaRequest $request, object $model): void
+    public function fill(NovaRequest $request, $model)
     {
         $foreignKey = $this->getRelationForeignKeyName($model->{$this->attribute}());
 
@@ -247,10 +269,11 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     /**
      * Hydrate the given attribute on the model based on the incoming request.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent  $model
+     * @return mixed
      */
-    #[\Override]
-    public function fillForAction(NovaRequest $request, object $model): void
+    public function fillForAction(NovaRequest $request, $model)
     {
         if ($request->exists($this->attribute)) {
             $value = $request[$this->attribute];
@@ -262,10 +285,13 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     /**
      * Hydrate the given attribute on the model based on the incoming request.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  string  $requestAttribute
      * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent  $model
+     * @param  string  $attribute
+     * @return mixed
      */
-    #[\Override]
-    protected function fillAttributeFromRequest(NovaRequest $request, string $requestAttribute, object $model, string $attribute): void
+    protected function fillAttributeFromRequest(NovaRequest $request, $requestAttribute, $model, $attribute)
     {
         if ($request->exists($requestAttribute)) {
             $value = $request[$requestAttribute];
@@ -283,16 +309,77 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     }
 
     /**
+     * Build an associatable query for the field.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  bool  $withTrashed
+     * @return \Laravel\Nova\Contracts\QueryBuilder
+     */
+    public function buildAssociatableQuery(NovaRequest $request, $withTrashed = false)
+    {
+        $model = forward_static_call(
+            [$resourceClass = $this->resourceClass, 'newModel']
+        );
+
+        $query = app()->make(QueryBuilder::class, [$resourceClass]);
+
+        $request->first === 'true'
+                        ? $query->whereKey($model->newQueryWithoutScopes(), $request->current)
+                        : $query->search(
+                            $request, $model->newQuery(), $request->search,
+                            [], [], TrashedStatus::fromBoolean($withTrashed)
+                        );
+
+        return $query->tap(function ($query) use ($request, $model) {
+            if (is_callable($this->relatableQueryCallback)) {
+                call_user_func($this->relatableQueryCallback, $request, $query);
+
+                return;
+            }
+
+            forward_static_call($this->associatableQueryCallable($request, $model), $request, $query, $this);
+        });
+    }
+
+    /**
+     * Get the associatable query method name.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @return array
+     */
+    protected function associatableQueryCallable(NovaRequest $request, $model)
+    {
+        return ($method = $this->associatableQueryMethod($request, $model))
+                    ? [$request->resource(), $method]
+                    : [$this->resourceClass, 'relatableQuery'];
+    }
+
+    /**
+     * Get the associatable query method name.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @return string|null
+     */
+    protected function associatableQueryMethod(NovaRequest $request, $model)
+    {
+        $method = 'relatable'.Str::plural(class_basename($model));
+
+        if (method_exists($request->resource(), $method)) {
+            return $method;
+        }
+    }
+
+    /**
      * Format the given associatable resource.
      *
-     * @param  \Laravel\Nova\Resource|\Illuminate\Database\Eloquent\Model  $resource
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  mixed  $resource
+     * @return array
      */
-    public function formatAssociatableResource(NovaRequest $request, $resource): array
+    public function formatAssociatableResource(NovaRequest $request, $resource)
     {
-        if (! $resource instanceof Resource) {
-            $resource = Nova::newResourceFromModel($resource);
-        }
-
         return array_filter([
             'avatar' => $resource->resolveAvatarUrl($request),
             'display' => $this->formatDisplayValue($resource),
@@ -304,9 +391,10 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     /**
      * Specify if the related resource can be viewed.
      *
+     * @param  bool  $value
      * @return $this
      */
-    public function viewable(bool $value = true)
+    public function viewable($value = true)
     {
         $this->viewable = $value;
 
@@ -316,10 +404,10 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     /**
      * Specify a callback that should be run when the field is filled.
      *
-     * @param  (callable(\Laravel\Nova\Http\Requests\NovaRequest, mixed):void)|null  $callback
+     * @param  \Closure(\Laravel\Nova\Http\Requests\NovaRequest, mixed):void  $callback
      * @return $this
      */
-    public function filled(?callable $callback)
+    public function filled($callback)
     {
         $this->filledCallback = $callback;
 
@@ -328,8 +416,11 @@ class BelongsTo extends Field implements FilterableField, RelatableField
 
     /**
      * Set the value for the field.
+     *
+     * @param  mixed  $value
+     * @return void
      */
-    public function setValue(mixed $value): void
+    public function setValue($value)
     {
         $this->belongsToId = Util::safeInt($value);
         $this->value = $value;
@@ -338,9 +429,10 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     /**
      * Set the attribute name of the inverse of the relationship.
      *
+     * @param  string  $inverse
      * @return $this
      */
-    public function inverse(string $inverse)
+    public function inverse($inverse)
     {
         $this->inverse = $inverse;
 
@@ -350,9 +442,10 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     /**
      * Set the displayable singular label of the resource.
      *
+     * @param  string  $singularLabel
      * @return $this
      */
-    public function singularLabel(Stringable|string $singularLabel)
+    public function singularLabel($singularLabel)
     {
         $this->singularLabel = $singularLabel;
 
@@ -360,10 +453,23 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     }
 
     /**
-     * Return the sortable uri key for the field.
+     * hides the "With Trashed" option.
+     *
+     * @return $this
      */
-    #[\Override]
-    public function sortableUriKey(): string
+    public function withoutTrashed()
+    {
+        $this->displaysWithTrashed = false;
+
+        return $this;
+    }
+
+    /**
+     * Return the sortable uri key for the field.
+     *
+     * @return string
+     */
+    public function sortableUriKey()
     {
         $request = app(NovaRequest::class);
 
@@ -373,27 +479,28 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     /**
      * Make the field filter.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return \Laravel\Nova\Fields\Filters\Filter|null
      */
     protected function makeFilter(NovaRequest $request)
     {
-        if (
-            is_null($request->resource) || (
-                $request->viaRelationship()
-                && ($request->relationshipType ?? null) === 'hasMany'
-                && $this->resourceClass::uriKey() === $request->viaResource
-            )
+        if ($request->viaRelationship()
+            && ($request->relationshipType ?? null) === 'hasMany'
+            && $this->resourceClass::uriKey() === $request->viaResource
         ) {
             return null;
         }
 
-        return new BelongsToFilter($this, $request->resource);
+        return new EloquentFilter($this);
     }
 
     /**
      * Define filterable attribute.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @return string
      */
-    protected function filterableAttribute(NovaRequest $request): string
+    protected function filterableAttribute(NovaRequest $request)
     {
         return $this->getRelationForeignKeyName($request->newResource()->resource->{$this->attribute}());
     }
@@ -401,33 +508,33 @@ class BelongsTo extends Field implements FilterableField, RelatableField
     /**
      * Define the default filterable callback.
      *
-     * @return callable(\Laravel\Nova\Http\Requests\NovaRequest, \Illuminate\Contracts\Database\Eloquent\Builder, mixed, string):void
+     * @return callable(\Laravel\Nova\Http\Requests\NovaRequest, \Illuminate\Database\Eloquent\Builder, mixed, string):void
      */
     protected function defaultFilterableCallback()
     {
-        return static function (NovaRequest $request, $query, $value, $attribute) {
+        return function (NovaRequest $request, $query, $value, $attribute) {
             $query->where($attribute, '=', $value);
         };
     }
 
     /**
      * Prepare the field for JSON serialization.
+     *
+     * @return array
      */
-    #[\Override]
-    public function serializeForFilter(): array
+    public function serializeForFilter()
     {
-        $label = $this->resourceClass::label();
-
-        return transform($this->jsonSerialize(), static fn ($field) => [
-            'attribute' => $field['attribute'],
-            'debounce' => $field['debounce'],
-            'displaysWithTrashed' => $field['displaysWithTrashed'],
-            'label' => $label,
-            'resourceName' => $field['resourceName'],
-            'searchable' => $field['searchable'],
-            'withSubtitles' => $field['withSubtitles'],
-            'uniqueKey' => $field['uniqueKey'],
-        ]);
+        return transform($this->jsonSerialize(), function ($field) {
+            return [
+                'debounce' => $field['debounce'],
+                'displaysWithTrashed' => $field['displaysWithTrashed'],
+                'label' => $this->resourceClass::label(),
+                'resourceName' => $field['resourceName'],
+                'searchable' => $field['searchable'],
+                'withSubtitles' => $field['withSubtitles'],
+                'uniqueKey' => $field['uniqueKey'],
+            ];
+        });
     }
 
     /**
@@ -435,7 +542,6 @@ class BelongsTo extends Field implements FilterableField, RelatableField
      *
      * @return array<string, mixed>
      */
-    #[\Override]
     public function jsonSerialize(): array
     {
         return with(app(NovaRequest::class), function ($request) {

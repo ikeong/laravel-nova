@@ -3,22 +3,32 @@
     :resourceName="resourceName"
     :lens="lens"
     :searchable="searchable"
-    :per-page-options="perPageOptions"
   />
 </template>
 
-<script setup>
+<script>
 import { mapProps } from '@/mixins'
 import ResourceLens from '@/views/Lens'
 
-defineOptions({
+export default {
   name: 'Lens',
-})
 
-defineProps({
-  lens: { type: String, required: true },
-  searchable: { type: Boolean, default: false },
-  perPageOptions: { type: Array, required: true },
-  ...mapProps(['resourceName']),
-})
+  components: {
+    ResourceLens,
+  },
+
+  props: {
+    lens: {
+      type: String,
+      required: true,
+    },
+
+    searchable: {
+      type: Boolean,
+      default: false,
+    },
+
+    ...mapProps(['resourceName']),
+  },
+}
 </script>

@@ -9,7 +9,7 @@
       <textarea
         ref="theTextarea"
         :id="currentField.uniqueKey"
-        class="w-full h-auto py-3 form-control form-input form-control-bordered"
+        class="w-full form-control form-input form-control-bordered py-3 h-auto"
       />
     </template>
   </DefaultField>
@@ -56,7 +56,6 @@ export default {
         lineWrapping: true,
         lineNumbers: true,
         theme: 'dracula',
-        autoRefresh: true,
         ...{ readOnly: this.currentlyIsReadonly },
         ...this.currentField.options,
       }

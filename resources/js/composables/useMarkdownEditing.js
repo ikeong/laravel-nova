@@ -1,14 +1,14 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import CodeMirror from 'codemirror'
-import debounce from 'lodash/debounce'
-
+import each from 'lodash/each'
+import isNil from 'lodash/isNil'
 import { useLocalization } from '@/composables/useLocalization'
 
 const { __ } = useLocalization()
 
 const defineMarkdownCommands = (
   editor,
-  { props, emitter, isFocused, filesUploadingCount, filesUploadedCount, files }
+  { props, emit, isFocused, filesCount, filesUploaded }
 ) => {
   const doc = editor.getDoc()
 
@@ -82,25 +82,25 @@ const defineMarkdownCommands = (
     },
 
     uploadAttachment(file) {
-      if (props.uploader != null) {
-        filesUploadingCount.value = filesUploadingCount.value + 1
+      if (!isNil(props.uploader)) {
+        filesCount.value = filesCount.value + 1
 
         const placeholder = `![Uploading ${file.name}…]()`
 
         this.insert(placeholder)
 
         props.uploader(file, {
-          onCompleted: (path, url) => {
+          onCompleted: url => {
             let value = doc.getValue()
-            value = value.replace(placeholder, `![${path}](${url})`)
+            value = value.replace(placeholder, `![${file.name}](${url})`)
 
             doc.setValue(value)
-            emitter('change', value)
+            emit('change', value)
 
-            filesUploadedCount.value = filesUploadedCount.value + 1
+            filesUploaded.value = filesUploaded.value + 1
           },
           onFailure: error => {
-            filesUploadingCount.value = filesUploadingCount.value - 1
+            filesCount.value = filesCount.value - 1
           },
         })
       }
@@ -164,7 +164,7 @@ const defineMarkdownKeyMaps = (editor, actions) => {
     Esc: 'exitFullScreen',
   }
 
-  Object.entries(keyMaps).forEach(([map, action]) => {
+  each(keyMaps, (action, map) => {
     const realMap = map.replace(
       'Cmd-',
       CodeMirror.keyMap['default'] == CodeMirror.keyMap.macDefault
@@ -176,11 +176,7 @@ const defineMarkdownKeyMaps = (editor, actions) => {
   })
 }
 
-const defineMarkdownEvents = (
-  editor,
-  commands,
-  { props, emitter, isFocused, files, filesUploadingCount, filesUploadedCount }
-) => {
+const defineMarkdownEvents = (editor, commands, { props, emit, isFocused }) => {
   const doc = editor.getDoc()
 
   const handlePasteFromClipboard = e => {
@@ -197,48 +193,14 @@ const defineMarkdownEvents = (
     }
   }
 
-  const markdownFileRegex = /!\[[^\]]*\]\(([^\)]+)\)/gm
-
-  const getFileUrls = function (content) {
-    return [...content.matchAll(markdownFileRegex)]
-      .map(match => match[1])
-      .filter(url => {
-        try {
-          new URL(url)
-          return true
-        } catch {
-          return false
-        }
-      })
-  }
-
   editor.on('focus', () => (isFocused.value = true))
   editor.on('blur', () => (isFocused.value = false))
 
   doc.on('change', (cm, changeObj) => {
-    if (changeObj.origin === 'setValue') {
-      return
+    if (changeObj.origin !== 'setValue') {
+      emit('change', cm.getValue())
     }
-
-    emitter('change', cm.getValue())
   })
-
-  doc.on(
-    'change',
-    debounce((cm, changeObj) => {
-      const newFiles = getFileUrls(cm.getValue())
-
-      files.value
-        .filter(file => !newFiles.includes(file))
-        .filter((url, index, array) => array.indexOf(url) === index)
-        .forEach(file => emitter('file-removed', file))
-      newFiles
-        .filter(url => !files.value.includes(url))
-        .filter((url, index, array) => array.indexOf(url) === index)
-        .forEach(file => emitter('file-added', file))
-      files.value = newFiles
-    }, 1000)
-  )
 
   editor.on('paste', (cm, event) => {
     handlePasteFromClipboard(event)
@@ -254,14 +216,13 @@ const defineMarkdownEvents = (
 const bootstrap = (
   theTextarea,
   {
-    emitter,
+    emit,
     props,
     isEditable,
     isFocused,
     isFullScreen,
-    filesUploadingCount,
-    filesUploadedCount,
-    files,
+    filesCount,
+    filesUploaded,
     unmountMarkdownEditor,
   }
 ) => {
@@ -275,31 +236,22 @@ const bootstrap = (
       Enter: 'newlineAndIndentContinueMarkdownList',
     },
     readOnly: props.readonly,
-    autoRefresh: true,
   })
 
   const doc = editor.getDoc()
 
   const commands = defineMarkdownCommands(editor, {
     props,
-    emitter,
+    emit,
     isFocused,
-    filesUploadingCount,
-    filesUploadedCount,
-    files,
+    filesCount,
+    filesUploaded,
   })
   const actions = defineMarkdownActions(commands, { isEditable, isFullScreen })
 
   defineMarkdownKeyMaps(editor, actions)
 
-  defineMarkdownEvents(editor, commands, {
-    props,
-    emitter,
-    isFocused,
-    files,
-    filesUploadingCount,
-    filesUploadedCount,
-  })
+  defineMarkdownEvents(editor, commands, { props, emit, isFocused })
 
   commands.refresh()
 
@@ -322,7 +274,7 @@ const bootstrap = (
   }
 }
 
-export function useMarkdownEditing(emitter, props) {
+export function useMarkdownEditing(emit, props) {
   const isFullScreen = ref(false)
   const isFocused = ref(false)
   const previewContent = ref('')
@@ -330,9 +282,8 @@ export function useMarkdownEditing(emitter, props) {
   const statusContent = ref(
     __('Attach files by dragging & dropping, selecting or pasting them.')
   )
-  const files = ref([])
-  const filesUploadingCount = ref(0)
-  const filesUploadedCount = ref(0)
+  const filesCount = ref(0)
+  const filesUploaded = ref(0)
 
   const isEditable = computed(
     () => props.readonly && visualMode.value == 'write'
@@ -343,14 +294,13 @@ export function useMarkdownEditing(emitter, props) {
     isFocused.value = false
     visualMode.value = 'write'
     previewContent.value = ''
-    filesUploadingCount.value = 0
-    filesUploadedCount.value = 0
-    files.value = []
+    filesCount.value = 0
+    filesUploaded.value = 0
   }
 
-  if (props.uploader != null) {
+  if (!isNil(props.uploader)) {
     watch(
-      [filesUploadedCount, filesUploadingCount],
+      [filesUploaded, filesCount],
       ([currentFilesUploaded, currentFilesCount]) => {
         if (currentFilesCount > currentFilesUploaded) {
           statusContent.value = __('Uploading files... (:current/:total)', {
@@ -369,14 +319,13 @@ export function useMarkdownEditing(emitter, props) {
   return {
     createMarkdownEditor: (context, theTextarea) => {
       return bootstrap.call(context, theTextarea, {
-        emitter,
+        emit,
         props,
         isEditable,
         isFocused,
         isFullScreen,
-        filesUploadingCount,
-        filesUploadedCount,
-        files,
+        filesCount,
+        filesUploaded,
         unmountMarkdownEditor,
       })
     },
@@ -386,6 +335,5 @@ export function useMarkdownEditing(emitter, props) {
     visualMode,
     previewContent,
     statusContent,
-    files,
   }
 }

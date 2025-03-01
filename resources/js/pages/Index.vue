@@ -3,20 +3,15 @@
     :resourceName="resourceName"
     :shouldOverrideMeta="true"
     :shouldEnableShortcut="true"
-    :collapsable="false"
-    :per-page-options="perPageOptions"
   />
 </template>
 
-<script setup>
+<script>
 import { mapProps } from '@/mixins'
 
-defineOptions({
+export default {
   name: 'Index',
-})
 
-defineProps({
-  perPageOptions: { type: Array, required: true },
-  ...mapProps(['resourceName']),
-})
+  props: mapProps(['resourceName']),
+}
 </script>

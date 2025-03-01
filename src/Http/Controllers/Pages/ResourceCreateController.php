@@ -4,7 +4,6 @@ namespace Laravel\Nova\Http\Controllers\Pages;
 
 use Illuminate\Routing\Controller;
 use Inertia\Inertia;
-use Inertia\Response;
 use Laravel\Nova\Http\Requests\ResourceCreateOrAttachRequest;
 use Laravel\Nova\Menu\Breadcrumb;
 use Laravel\Nova\Menu\Breadcrumbs;
@@ -14,8 +13,11 @@ class ResourceCreateController extends Controller
 {
     /**
      * Show Resource Create page using Inertia.
+     *
+     * @param  \Laravel\Nova\Http\Requests\ResourceCreateOrAttachRequest  $request
+     * @return \Inertia\Response
      */
-    public function __invoke(ResourceCreateOrAttachRequest $request): Response
+    public function __invoke(ResourceCreateOrAttachRequest $request)
     {
         $resourceClass = $request->resource();
 
@@ -32,18 +34,21 @@ class ResourceCreateController extends Controller
 
     /**
      * Get breadcrumb menu for the page.
+     *
+     * @param  \Laravel\Nova\Http\Requests\ResourceCreateOrAttachRequest  $request
+     * @return \Laravel\Nova\Menu\Breadcrumbs
      */
-    protected function breadcrumbs(ResourceCreateOrAttachRequest $request): Breadcrumbs
+    protected function breadcrumbs(ResourceCreateOrAttachRequest $request)
     {
         $resourceClass = $request->resource();
 
         return Breadcrumbs::make(
-            collect([Breadcrumb::make(Nova::__('Resources'))])->when($request->viaRelationship(), static function ($breadcrumbs) use ($request) {
+            collect([Breadcrumb::make(Nova::__('Resources'))])->when($request->viaRelationship(), function ($breadcrumbs) use ($request) {
                 return $breadcrumbs->push(
                     Breadcrumb::resource($request->viaResource()),
                     Breadcrumb::resource($request->findParentResourceOrFail())
                 );
-            }, static function ($breadcrumbs) use ($resourceClass) {
+            }, function ($breadcrumbs) use ($resourceClass) {
                 return $breadcrumbs->push(Breadcrumb::resource($resourceClass));
             })->push(
                 Breadcrumb::make(Nova::__('Create :resource', ['resource' => $resourceClass::singularLabel()]))

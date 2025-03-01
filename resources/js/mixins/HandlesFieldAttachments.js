@@ -1,5 +1,6 @@
+import { Errors } from 'form-backend-validation'
+import isNil from 'lodash/isNil'
 import { mapProps } from './propTypes'
-import { Errors } from '../util/FormValidation'
 
 export default {
   emits: ['file-upload-started', 'file-upload-finished'],
@@ -18,18 +19,11 @@ export default {
     }
   },
 
-  data: () => ({
-    draftId: null,
-    files: [],
-    filesToRemove: [],
-  }),
+  data: () => ({ draftId: null }),
 
   methods: {
     /**
-     * Upload an attachment.
-     *
-     * @param {any} file
-     * @param {{onUploadProgress?: Function, onCompleted?: Function, onFailure?: Function}}
+     * Upload an attachment
      */
     uploadAttachment(file, { onUploadProgress, onCompleted, onFailure }) {
       const data = new FormData()
@@ -37,15 +31,15 @@ export default {
       data.append('attachment', file)
       data.append('draftId', this.draftId)
 
-      if (onUploadProgress == null) {
+      if (isNil(onUploadProgress)) {
         onUploadProgress = () => {}
       }
 
-      if (onFailure == null) {
+      if (isNil(onFailure)) {
         onFailure = () => {}
       }
 
-      if (onCompleted == null) {
+      if (isNil(onCompleted)) {
         throw 'Missing onCompleted parameter'
       }
 
@@ -57,9 +51,8 @@ export default {
           data,
           { onUploadProgress }
         )
-        .then(({ data: { path, url } }) => {
-          this.files.push({ path, url })
-          const response = onCompleted(path, url)
+        .then(({ data: { url } }) => {
+          const response = onCompleted(url)
 
           this.$emit('file-upload-finished')
 
@@ -83,33 +76,16 @@ export default {
     },
 
     /**
-     * Remove an attachment from the server.
-     *
-     * @param {string} url
+     * Remove an attachment from the server
      */
-    flagFileForRemoval(url) {
-      const fileIndex = this.files.findIndex(file => file.url === url)
-
-      if (fileIndex !== -1) {
-        this.filesToRemove.push(this.files[fileIndex])
-        return
-      }
-      // Case of deleting a file which was added prior to this draft
-      this.filesToRemove.push({ url })
-    },
-
-    /**
-     * Unflag an attachment from removal.
-     *
-     * @param {string} url
-     */
-    unflagFileForRemoval(url) {
-      const fileIndex = this.filesToRemove.findIndex(file => file.url === url)
-
-      if (fileIndex === -1) {
-        return
-      }
-      this.filesToRemove.splice(fileIndex, 1)
+    removeAttachment(attachmentUrl) {
+      Nova.request()
+        .delete(
+          `/nova-api/${this.resourceName}/field-attachment/${this.fieldAttribute}`,
+          { params: { attachmentUrl } }
+        )
+        .then(response => {})
+        .catch(error => {})
     },
 
     /**
@@ -126,38 +102,15 @@ export default {
       }
     },
 
-    clearFilesMarkedForRemoval() {
-      if (this.field.withFiles) {
-        this.filesToRemove.forEach(file => {
-          Nova.debug('deleting', file)
-          Nova.request()
-            .delete(
-              `/nova-api/${this.resourceName}/field-attachment/${this.fieldAttribute}`,
-              {
-                params: {
-                  attachment: file.path,
-                  attachmentUrl: file.url,
-                  draftId: this.draftId,
-                },
-              }
-            )
-            .then(response => {})
-            .catch(error => {})
-        })
-      }
-    },
-
     /**
-     * Fill draft id for the field.
-     *
-     * @param {FormData} formData
+     * Fill draft id for the field
      */
     fillAttachmentDraftId(formData) {
       let attribute = this.fieldAttribute
 
       let [name, ...nested] = attribute.split('[')
 
-      if (nested != null && nested.length > 0) {
+      if (!isNil(nested) && nested.length > 0) {
         let last = nested.pop()
 
         if (nested.length > 0) {

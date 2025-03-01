@@ -30,54 +30,56 @@ class ToolCommand extends ComponentGeneratorCommand
      *
      * @return void
      */
-    public function handle(Filesystem $files)
+    public function handle()
     {
         if (! $this->hasValidNameArgument()) {
             return;
         }
 
-        $files->copyDirectory(
+        $noInteraction = $this->option('no-interaction');
+
+        (new Filesystem)->copyDirectory(
             __DIR__.'/tool-stubs',
             $this->componentPath()
         );
 
         // Route replacements...
-        $files->replaceInFile(['{{ component }}', '{{ name }}'], $this->componentName(), $this->componentPath().'/routes/api.stub');
-        $files->replaceInFile(['{{ component }}', '{{ name }}'], $this->componentName(), $this->componentPath().'/routes/inertia.stub');
-        $files->replaceInFile('{{ class }}', $this->componentClass(), $this->componentPath().'/routes/inertia.stub');
+        $this->replace(['{{ component }}', '{{ name }}'], $this->componentName(), $this->componentPath().'/routes/api.stub');
+        $this->replace(['{{ component }}', '{{ name }}'], $this->componentName(), $this->componentPath().'/routes/inertia.stub');
+        $this->replace('{{ class }}', $this->componentClass(), $this->componentPath().'/routes/inertia.stub');
 
         // Tool.js replacements...
-        $files->replaceInFile(['{{ component }}', '{{ name }}'], $this->componentName(), $this->componentPath().'/resources/js/tool.js');
-        $files->replaceInFile('{{ class }}', $this->componentClass(), $this->componentPath().'/resources/js/tool.js');
+        $this->replace(['{{ component }}', '{{ name }}'], $this->componentName(), $this->componentPath().'/resources/js/tool.js');
+        $this->replace('{{ class }}', $this->componentClass(), $this->componentPath().'/resources/js/tool.js');
 
         // Tool.vue replacements...
-        $files->replaceInFile('{{ title }}', $this->componentTitle(), $this->componentPath().'/resources/js/pages/Tool.vue');
-        $files->replaceInFile('{{ class }}', $this->componentClass(), $this->componentPath().'/resources/js/pages/Tool.vue');
+        $this->replace('{{ title }}', $this->componentTitle(), $this->componentPath().'/resources/js/pages/Tool.vue');
+        $this->replace('{{ class }}', $this->componentClass(), $this->componentPath().'/resources/js/pages/Tool.vue');
 
         // Tool.php replacements...
-        $files->replaceInFile('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/Tool.stub');
-        $files->replaceInFile('{{ class }}', $this->componentClass(), $this->componentPath().'/src/Tool.stub');
-        $files->replaceInFile('{{ title }}', $this->componentTitle(), $this->componentPath().'/src/Tool.stub');
-        $files->replaceInFile(['{{ component }}', '{{ name }}'], $this->componentName(), $this->componentPath().'/src/Tool.stub');
+        $this->replace('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/Tool.stub');
+        $this->replace('{{ class }}', $this->componentClass(), $this->componentPath().'/src/Tool.stub');
+        $this->replace('{{ title }}', $this->componentTitle(), $this->componentPath().'/src/Tool.stub');
+        $this->replace(['{{ component }}', '{{ name }}'], $this->componentName(), $this->componentPath().'/src/Tool.stub');
 
-        $files->move(
+        (new Filesystem)->move(
             $this->componentPath().'/src/Tool.stub',
             $this->componentPath().'/src/'.$this->componentClass().'.php'
         );
 
         // ToolServiceProvider.php replacements...
-        $files->replaceInFile('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/ToolServiceProvider.stub');
-        $files->replaceInFile(['{{ component }}', '{{ name }}'], $this->componentName(), $this->componentPath().'/src/ToolServiceProvider.stub');
+        $this->replace('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/ToolServiceProvider.stub');
+        $this->replace(['{{ component }}', '{{ name }}'], $this->componentName(), $this->componentPath().'/src/ToolServiceProvider.stub');
 
         // webpack.mix.js replacements...
-        $files->replaceInFile('{{ name }}', $this->component(), $this->componentPath().'/webpack.mix.js');
+        $this->replace('{{ name }}', $this->component(), $this->componentPath().'/webpack.mix.js');
 
         // Authorize.php replacements...
-        $files->replaceInFile('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/Http/Middleware/Authorize.stub');
-        $files->replaceInFile('{{ class }}', $this->componentClass(), $this->componentPath().'/src/Http/Middleware/Authorize.stub');
+        $this->replace('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/Http/Middleware/Authorize.stub');
+        $this->replace('{{ class }}', $this->componentClass(), $this->componentPath().'/src/Http/Middleware/Authorize.stub');
 
         // Tool composer.json replacements...
-        $this->prepareComposerReplacements($files);
+        $this->prepareComposerReplacements();
 
         // Rename the stubs with the proper file extensions...
         $this->renameStubs();

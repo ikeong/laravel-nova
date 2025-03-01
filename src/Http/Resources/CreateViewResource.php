@@ -3,7 +3,6 @@
 namespace Laravel\Nova\Http\Resources;
 
 use Laravel\Nova\Http\Requests\ResourceCreateOrAttachRequest;
-use Laravel\Nova\Resource as NovaResource;
 
 class CreateViewResource extends Resource
 {
@@ -17,8 +16,6 @@ class CreateViewResource extends Resource
     {
         $resource = $this->newResourceWith($request);
 
-        $this->authorizedResourceForRequest($request);
-
         $fields = $resource->creationFieldsWithinPanels($request)->applyDependsOnWithDefaultValues($request);
 
         return [
@@ -30,22 +27,17 @@ class CreateViewResource extends Resource
     /**
      * Get current resource for the request.
      *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function newResourceWith(ResourceCreateOrAttachRequest $request): NovaResource
-    {
-        return $request->newResource();
-    }
-
-    /**
-     * Determine if resource is authorized for the request.
+     * @param  \Laravel\Nova\Http\Requests\ResourceCreateOrAttachRequest  $request
+     * @return \Laravel\Nova\Resource
      *
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function authorizedResourceForRequest(ResourceCreateOrAttachRequest $request): void
+    public function newResourceWith(ResourceCreateOrAttachRequest $request)
     {
         $resourceClass = $request->resource();
 
         $resourceClass::authorizeToCreate($request);
+
+        return $request->newResource();
     }
 }

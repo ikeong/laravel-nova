@@ -4,9 +4,6 @@ namespace Laravel\Nova\Metrics;
 
 use JsonSerializable;
 
-/**
- * @phpstan-import-type TNumbroFormat from \Laravel\Nova\Metrics\ValueResult
- */
 class ProgressResult implements JsonSerializable
 {
     use RoundingPrecision;
@@ -139,12 +136,10 @@ class ProgressResult implements JsonSerializable
     /**
      * Set the metric value formatting.
      *
-     * @param  array<string, mixed>|string  $format
+     * @param  string  $format
      * @return $this
-     *
-     * @phpstan-param TNumbroFormat|string  $format
      */
-    public function format(array|string $format)
+    public function format($format)
     {
         $this->format = $format;
 

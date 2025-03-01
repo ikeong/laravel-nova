@@ -66,11 +66,7 @@
             dusk="open-delete-modal-button"
             @click.prevent="openDeleteModal"
           >
-            {{
-              __('Delete :resource', {
-                resource: resourceInformation.singularLabel,
-              })
-            }}
+            {{ __('Delete Resource') }}
           </DropdownMenuItem>
 
           <DropdownMenuItem
@@ -79,11 +75,7 @@
             dusk="open-restore-modal-button"
             @click.prevent="openRestoreModal"
           >
-            {{
-              __('Restore :resource', {
-                resource: resourceInformation.singularLabel,
-              })
-            }}
+            {{ __('Restore Resource') }}
           </DropdownMenuItem>
 
           <DropdownMenuItem
@@ -92,11 +84,7 @@
             dusk="open-force-delete-modal-button"
             @click.prevent="openForceDeleteModal"
           >
-            {{
-              __('Force Delete :resource', {
-                resource: resourceInformation.singularLabel,
-              })
-            }}
+            {{ __('Force Delete Resource') }}
           </DropdownMenuItem>
         </div>
       </div>
@@ -104,32 +92,29 @@
   </ActionDropdown>
 
   <DeleteResourceModal
-    mode="delete"
-    :resource-name="resourceName"
     :show="deleteModalOpen"
+    mode="delete"
     @close="closeDeleteModal"
     @confirm="confirmDelete"
   />
 
   <RestoreResourceModal
-    :resource-name="resourceName"
     :show="restoreModalOpen"
     @close="closeRestoreModal"
     @confirm="confirmRestore"
   />
 
   <DeleteResourceModal
-    mode="force delete"
-    :resource-name="resourceName"
     :show="forceDeleteModalOpen"
+    mode="force delete"
     @close="closeForceDeleteModal"
     @confirm="confirmForceDelete"
   />
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
 import { Deletable, InteractsWithResourceInformation, mapProps } from '@/mixins'
+import { mapGetters, mapActions } from 'vuex'
 
 export default {
   emits: ['actionExecuted', 'resource-deleted', 'resource-restored'],

@@ -6,7 +6,6 @@ use Illuminate\Support\Arr;
 use Laravel\Nova\Contracts\FilterableField;
 use Laravel\Nova\Fields\Filters\TextFilter;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Laravel\Nova\Nova;
 
 class Email extends Text implements FilterableField
 {
@@ -23,50 +22,49 @@ class Email extends Text implements FilterableField
     /**
      * Create a new field.
      *
-     * @param  \Stringable|string|null  $name
-     * @param  string|callable|object|null  $attribute
+     * @param  string|null  $name
+     * @param  string|\Closure|callable|object|null  $attribute
      * @param  (callable(mixed, mixed, ?string):(mixed))|null  $resolveCallback
      * @return void
      */
-    public function __construct($name = null, mixed $attribute = 'email', ?callable $resolveCallback = null)
+    public function __construct($name = 'Email', $attribute = 'email', callable $resolveCallback = null)
     {
-        if (is_null($name)) {
-            $attribute ??= 'email';
-        }
-
-        parent::__construct($name ?? Nova::__('Email'), $attribute, $resolveCallback);
-
-        $this->withAutoCompletion('email');
+        parent::__construct($name, $attribute, $resolveCallback);
     }
 
     /**
      * Make the field filter.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return \Laravel\Nova\Fields\Filters\Filter
      */
     protected function makeFilter(NovaRequest $request)
     {
-        return tap(new TextFilter($this), static function ($filter) {
+        return tap(new TextFilter($this), function ($filter) {
             $filter->component = 'email-field';
         });
     }
 
     /**
      * Prepare the field for JSON serialization.
+     *
+     * @return array
      */
-    public function serializeForFilter(): array
+    public function serializeForFilter()
     {
-        return transform($this->jsonSerialize(), static fn ($field) => Arr::only($field, [
-            'uniqueKey',
-            'name',
-            'attribute',
-            'type',
-            'min',
-            'max',
-            'step',
-            'pattern',
-            'placeholder',
-            'extraAttributes',
-        ]));
+        return transform($this->jsonSerialize(), function ($field) {
+            return Arr::only($field, [
+                'uniqueKey',
+                'name',
+                'attribute',
+                'type',
+                'min',
+                'max',
+                'step',
+                'pattern',
+                'placeholder',
+                'extraAttributes',
+            ]);
+        });
     }
 }

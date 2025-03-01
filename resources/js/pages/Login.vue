@@ -13,21 +13,20 @@
       <DividerLine />
 
       <div class="mb-6">
-        <label class="block mb-2" for="username">{{ __(usernameLabel) }}</label>
+        <label class="block mb-2" for="email">{{ __('Email Address') }}</label>
         <input
-          v-model="form[username]"
-          class="w-full form-control form-input form-control-bordered"
-          :class="{ 'form-control-bordered-error': form.errors.has(username) }"
-          id="username"
-          :type="usernameInputType"
-          :name="username"
+          v-model="form.email"
+          class="form-control form-input form-control-bordered w-full"
+          :class="{ 'form-control-bordered-error': form.errors.has('email') }"
+          id="email"
+          type="email"
+          name="email"
           autofocus=""
-          autocomplete="username"
           required
         />
 
-        <HelpText class="mt-2 text-red-500" v-if="form.errors.has(username)">
-          {{ form.errors.first(username) }}
+        <HelpText class="mt-2 text-red-500" v-if="form.errors.has('email')">
+          {{ form.errors.first('email') }}
         </HelpText>
       </div>
 
@@ -35,14 +34,13 @@
         <label class="block mb-2" for="password">{{ __('Password') }}</label>
         <input
           v-model="form.password"
-          class="w-full form-control form-input form-control-bordered"
+          class="form-control form-input form-control-bordered w-full"
           :class="{
             'form-control-bordered-error': form.errors.has('password'),
           }"
           id="password"
           type="password"
           name="password"
-          autocomplete="current-password"
           required
         />
 
@@ -105,36 +103,22 @@ export default {
     Button,
   },
 
-  props: {
-    username: { type: String, default: 'email' },
-    email: { type: String, default: 'email' },
-  },
-
-  data() {
-    return {
-      form: Nova.form({
-        [this.username]: '',
-        password: '',
-        remember: false,
-      }),
-    }
-  },
+  data: () => ({
+    form: Nova.form({
+      email: '',
+      password: '',
+      remember: false,
+    }),
+  }),
 
   methods: {
     async attempt() {
       try {
-        const { redirect, two_factor } = await this.form.post(
-          Nova.url('/login')
-        )
+        const { redirect } = await this.form.post(Nova.url('/login'))
 
         let path = { url: Nova.url('/'), remote: true }
 
-        if (two_factor === true) {
-          path = {
-            url: Nova.url('/user-security/two-factor-challenge'),
-            remote: false,
-          }
-        } else if (redirect != null) {
+        if (redirect !== undefined && redirect !== null) {
           path = { url: redirect, remote: true }
         }
 
@@ -148,14 +132,6 @@ export default {
   },
 
   computed: {
-    usernameLabel() {
-      return this.username === this.email ? 'Email Address' : 'Username'
-    },
-
-    usernameInputType() {
-      return this.username === this.email ? 'email' : 'text'
-    },
-
     supportsPasswordReset() {
       return Nova.config('withPasswordReset')
     },

@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-export function useDragAndDrop(emitter) {
+export function useDragAndDrop(emit) {
   const startedDrag = ref(false)
   const files = ref([])
 
@@ -10,7 +10,7 @@ export function useDragAndDrop(emitter) {
 
   const handleOnDrop = e => {
     files.value = e.dataTransfer.files
-    emitter('fileChanged', e.dataTransfer.files)
+    emit('fileChanged', e.dataTransfer.files)
   }
 
   return {

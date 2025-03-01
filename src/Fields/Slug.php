@@ -18,9 +18,9 @@ class Slug extends Field implements Previewable
     /**
      * The field the slug should be generated from.
      *
-     * @var \Laravel\Nova\Fields\Field|string|null
+     * @var string|\Laravel\Nova\Fields\Field
      */
-    public $from = null;
+    public $from;
 
     /**
      * The separator to use for the slug.
@@ -39,12 +39,12 @@ class Slug extends Field implements Previewable
     /**
      * Create a new field.
      *
-     * @param  \Stringable|string  $name
-     * @param  string|callable|object|null  $attribute
+     * @param  string  $name
+     * @param  string|\Closure|callable|object|null  $attribute
      * @param  (callable(mixed, mixed, ?string):(mixed))|null  $resolveCallback
      * @return void
      */
-    public function __construct($name, mixed $attribute = null, ?callable $resolveCallback = null)
+    public function __construct($name, $attribute = null, callable $resolveCallback = null)
     {
         parent::__construct($name, $attribute, $resolveCallback);
     }
@@ -52,9 +52,10 @@ class Slug extends Field implements Previewable
     /**
      * The field the slug should be generated from.
      *
+     * @param  string|\Laravel\Nova\Fields\Field  $from
      * @return $this
      */
-    public function from(Field|string $from)
+    public function from($from)
     {
         $this->from = $from;
 
@@ -64,9 +65,10 @@ class Slug extends Field implements Previewable
     /**
      * Set the separator used for slugifying the field.
      *
+     * @param  string  $separator
      * @return $this
      */
-    public function separator(string $separator)
+    public function separator($separator)
     {
         $this->separator = $separator;
 
@@ -77,7 +79,7 @@ class Slug extends Field implements Previewable
      * Return a preview for the given field value.
      *
      * @param  string  $value
-     * @return string
+     * @return mixed
      */
     public function previewFor($value)
     {
@@ -89,25 +91,18 @@ class Slug extends Field implements Previewable
      *
      * @return array<string, mixed>
      */
-    #[\Override]
     public function jsonSerialize(): array
     {
         $request = app(NovaRequest::class);
 
-        $from = match (true) {
-            $this->from instanceof Field => $this->from->attribute,
-            ! empty($this->from) => str_replace(' ', '_', Str::lower((string) $this->from)),
-            default => null,
-        };
-
-        if (! is_null($from) && $request->isUpdateOrUpdateAttachedRequest()) {
-            $this->immutable();
+        if ($request->isUpdateOrUpdateAttachedRequest()) {
+            $this->readonly();
             $this->showCustomizeButton = true;
         }
 
         return array_merge([
-            'shouldListenToFromChanges' => ! is_null($from) && ! $request->isUpdateOrUpdateAttachedRequest(),
-            'from' => $from,
+            'updating' => $request->isUpdateOrUpdateAttachedRequest(),
+            'from' => $this->from instanceof Field ? $this->from->attribute : str_replace(' ', '_', Str::lower((string) $this->from)),
             'separator' => $this->separator,
             'showCustomizeButton' => $this->showCustomizeButton,
         ], parent::jsonSerialize());

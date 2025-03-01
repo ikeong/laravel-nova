@@ -52,35 +52,29 @@
 
     <DeleteResourceModal
       :mode="viaManyToMany ? 'detach' : 'delete'"
-      :resource-name="resourceName"
       :show="selectedResources.length > 0 && deleteSelectedModalOpen"
       @close="closeDeleteSelectedModal"
       @confirm="deleteSelectedResources"
     />
 
     <DeleteResourceModal
-      mode="delete"
-      :resource-name="resourceName"
       :show="selectedResources.length > 0 && forceDeleteSelectedModalOpen"
+      mode="delete"
       @close="closeForceDeleteSelectedModal"
       @confirm="forceDeleteSelectedResources"
     >
-      <template #content>
-        <ModalContent>
-          <p
-            class="leading-normal"
-            v-text="
-              __(
-                'Are you sure you want to force delete the selected resources?'
-              )
-            "
-          />
-        </ModalContent>
-      </template>
+      <ModalHeader v-text="__('Force Delete Resource')" />
+      <ModalContent>
+        <p
+          class="leading-normal"
+          v-text="
+            __('Are you sure you want to force delete the selected resources?')
+          "
+        />
+      </ModalContent>
     </DeleteResourceModal>
 
     <RestoreResourceModal
-      :resource-name="resourceName"
       :show="selectedResources.length > 0 && restoreModalOpen"
       @close="closeRestoreModal"
       @confirm="restoreSelectedResources"
@@ -89,11 +83,9 @@
 </template>
 
 <script>
+import find from 'lodash/find'
 import { Button } from 'laravel-nova-ui'
-import {
-  InteractsWithQueryString,
-  InteractsWithResourceInformation,
-} from '@/mixins'
+import { InteractsWithQueryString } from '@/mixins'
 
 export default {
   components: {
@@ -110,7 +102,7 @@ export default {
     'restoreSelected',
   ],
 
-  mixins: [InteractsWithQueryString, InteractsWithResourceInformation],
+  mixins: [InteractsWithQueryString],
 
   props: [
     'allMatchingResourceCount',
@@ -122,7 +114,6 @@ export default {
     'authorizedToRestoreAnyResources',
     'authorizedToRestoreSelectedResources',
     'resources',
-    'resourceName',
     'selectedResources',
     'show',
     'softDeletes',
@@ -285,7 +276,7 @@ export default {
      */
     softDeletedResourcesSelected() {
       return Boolean(
-        this.selectedResources.find(resource => resource.softDeleted) != null
+        find(this.selectedResources, resource => resource.softDeleted)
       )
     },
   },

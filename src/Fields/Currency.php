@@ -8,11 +8,6 @@ use Brick\Money\Money;
 use NumberFormatter;
 use Symfony\Polyfill\Intl\Icu\Currencies;
 
-/**
- * @property string|null $step
- *
- * @method $this step(string|null $step)
- */
 class Currency extends Number
 {
     /**
@@ -21,6 +16,13 @@ class Currency extends Number
      * @var string
      */
     public $component = 'currency-field';
+
+    /**
+     * The format the field will be displayed in.
+     *
+     * @var string
+     */
+    public $format;
 
     /**
      * The locale of the field.
@@ -32,19 +34,14 @@ class Currency extends Number
     /**
      * The currency of the value.
      *
-     * @var string|null
+     * @var string
      */
-    public $currency = null;
-
-    /**
-     * The default currency for Nova.
-     */
-    public string $defaultCurrency;
+    public $currency;
 
     /**
      * The symbol used by the currency.
      *
-     * @var string|null
+     * @var null|string
      */
     public $currencySymbol = null;
 
@@ -65,28 +62,26 @@ class Currency extends Number
     /**
      * Create a new field.
      *
-     * @param  \Stringable|string  $name
-     * @param  string|callable|object|null  $attribute
+     * @param  string  $name
+     * @param  string|\Closure|callable|object|null  $attribute
      * @param  (callable(mixed, mixed, ?string):(mixed))|null  $resolveCallback
      * @return void
      */
-    public function __construct($name, mixed $attribute = null, ?callable $resolveCallback = null)
+    public function __construct($name, $attribute = null, $resolveCallback = null)
     {
         parent::__construct($name, $attribute, $resolveCallback);
 
         $this->locale = config('app.locale', 'en');
-        $this->defaultCurrency = config('nova.currency', 'USD');
+        $this->currency = config('nova.currency', 'USD');
 
         $this->step($this->getStepValue())
             ->fillUsing(function ($request, $model, $attribute, $requestAttribute) {
                 $value = $request->$requestAttribute;
 
                 if ($this->minorUnits && ! $this->isValidNullValue($value)) {
-                    $currency = $this->currency ?? $this->defaultCurrency;
-
                     $model->$attribute = $this->toMoneyInstance(
-                        $value * (10 ** Currencies::getFractionDigits($currency)),
-                        $currency
+                        $value * (10 ** Currencies::getFractionDigits($this->currency)),
+                        $this->currency
                     )->getMinorAmount()->toInt();
                 } else {
                     $model->$attribute = $value;
@@ -106,10 +101,14 @@ class Currency extends Number
 
     /**
      * Convert the value to a Money instance.
+     *
+     * @param  mixed  $value
+     * @param  null|string  $currency
+     * @return \Brick\Money\Money
      */
-    public function toMoneyInstance(mixed $value, ?string $currency = null): Money
+    public function toMoneyInstance($value, $currency = null)
     {
-        $currency ??= ($this->currency ?? $this->defaultCurrency);
+        $currency = $currency ?? $this->currency;
         $method = $this->minorUnits ? 'ofMinor' : 'of';
 
         $context = $this->context ?? new CustomContext(Currencies::getFractionDigits($currency));
@@ -119,8 +118,13 @@ class Currency extends Number
 
     /**
      * Format the field's value into Money format.
+     *
+     * @param  mixed  $value
+     * @param  null|string  $currency
+     * @param  null|string  $locale
+     * @return string
      */
-    public function formatMoney(mixed $value, ?string $currency = null, ?string $locale = null): string
+    public function formatMoney($value, $currency = null, $locale = null)
     {
         $money = $this->toMoneyInstance($value, $currency);
 
@@ -141,17 +145,14 @@ class Currency extends Number
     /**
      * Set the currency code for the field.
      *
+     * @param  string  $currency
      * @return $this
      */
-    public function currency(?string $currency)
+    public function currency($currency)
     {
-        if (! empty($currency)) {
-            $this->currency = strtoupper($currency);
+        $this->currency = strtoupper($currency);
 
-            $this->step($this->getStepValue());
-        } else {
-            $this->currency = null;
-        }
+        $this->step($this->getStepValue());
 
         return $this;
     }
@@ -159,9 +160,10 @@ class Currency extends Number
     /**
      * Set the field locale.
      *
+     * @param  string  $locale
      * @return $this
      */
-    public function locale(string $locale)
+    public function locale($locale)
     {
         $this->locale = $locale;
 
@@ -171,9 +173,10 @@ class Currency extends Number
     /**
      * Set the symbol used by the field.
      *
+     * @param  string  $symbol
      * @return $this
      */
-    public function symbol(string $symbol)
+    public function symbol($symbol)
     {
         $this->currencySymbol = $symbol;
 
@@ -206,25 +209,22 @@ class Currency extends Number
 
     /**
      * Resolve the symbol used by the currency.
+     *
+     * @return string
      */
-    public function resolveCurrencySymbol(): string
+    public function resolveCurrencySymbol()
     {
-        if (! is_null($this->currencySymbol)) {
+        if ($this->currencySymbol) {
             return $this->currencySymbol;
         }
 
-        $currency = $this->currency ?? $this->defaultCurrency;
-
-        return tap(Currencies::getSymbol($currency), function (?string $symbol) use ($currency) {
-            if (is_null($symbol)) {
-                trigger_deprecation('laravel/nova', '5.2.0', 'Unable to retrieve currency symbol for "%s" currency', $currency);
-            }
-        }) ?? '';
+        return Currencies::getSymbol($this->currency);
     }
 
     /**
      * Set the context used to create the Money instance.
      *
+     * @param  \Brick\Money\Context  $context
      * @return $this
      */
     public function context(Context $context)
@@ -236,9 +236,11 @@ class Currency extends Number
 
     /**
      * Check value for null value.
+     *
+     * @param  mixed  $value
+     * @return bool
      */
-    #[\Override]
-    public function isValidNullValue(mixed $value): bool
+    public function isValidNullValue($value)
     {
         if (is_null($value)) {
             return true;
@@ -249,12 +251,12 @@ class Currency extends Number
 
     /**
      * Determine the step value for the field.
+     *
+     * @return string
      */
-    protected function getStepValue(): string
+    protected function getStepValue()
     {
-        $currency = $this->currency ?? $this->defaultCurrency;
-
-        return (string) 0.1 ** Currencies::getFractionDigits($currency);
+        return (string) 0.1 ** Currencies::getFractionDigits($this->currency);
     }
 
     /**
@@ -262,7 +264,6 @@ class Currency extends Number
      *
      * @return array<string, mixed>
      */
-    #[\Override]
     public function jsonSerialize(): array
     {
         return array_merge(parent::jsonSerialize(), [

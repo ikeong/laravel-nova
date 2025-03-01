@@ -3,7 +3,6 @@
 namespace Laravel\Nova\Http\Resources;
 
 use Laravel\Nova\Http\Requests\ResourceCreateOrAttachRequest;
-use Laravel\Nova\Resource as NovaResource;
 
 class CreationPivotFieldResource extends Resource
 {
@@ -16,20 +15,23 @@ class CreationPivotFieldResource extends Resource
     public function toArray($request)
     {
         return $this->newResourceWith($request)
-            ->creationPivotFields(
-                $request,
-                $request->relatedResource
-            )->applyDependsOnWithDefaultValues($request)->all();
+                    ->creationPivotFields(
+                        $request,
+                        $request->relatedResource
+                    )->applyDependsOnWithDefaultValues($request)->all();
     }
 
     /**
      * Get current resource for the request.
      *
+     * @param  \Laravel\Nova\Http\Requests\ResourceCreateOrAttachRequest  $request
+     * @return \Laravel\Nova\Resource
+     *
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function newResourceWith(ResourceCreateOrAttachRequest $request): NovaResource
+    public function newResourceWith(ResourceCreateOrAttachRequest $request)
     {
-        return tap($request->newResourceWith($request->findModel() ?? $request->model()), static function ($resource) use ($request) {
+        return tap($request->newResourceWith($request->findModel() ?? $request->model()), function ($resource) use ($request) {
             abort_unless($resource->hasRelatableField($request, $request->viaRelationship), 404);
         });
     }

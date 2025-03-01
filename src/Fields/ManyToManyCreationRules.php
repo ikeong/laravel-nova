@@ -45,9 +45,11 @@ trait ManyToManyCreationRules
     {
         $this->allowDuplicateRelations = true;
 
-        return $this->creationRules(static fn ($request) => [
-            new NotExactlyAttached($request, $request->findModelOrFail()),
-        ]);
+        return $this->creationRules(function ($request) {
+            return [
+                new NotExactlyAttached($request, $request->findModelOrFail()),
+            ];
+        });
     }
 
     /**
@@ -59,22 +61,23 @@ trait ManyToManyCreationRules
     {
         $this->allowDuplicateRelations = false;
 
-        return $this->creationRules(static fn ($request) => [
-            new NotAttached($request, $request->findModelOrFail()),
-        ]);
+        return $this->creationRules(function ($request) {
+            return [
+                new NotAttached($request, $request->findModelOrFail()),
+            ];
+        });
     }
 
     /**
      * Get the creation rules for this field.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return array<int, string|\Illuminate\Validation\Rule|\Illuminate\Contracts\Validation\Rule|callable>
      */
     public function getManyToManyCreationRules(NovaRequest $request)
     {
-        return transform(
-            $this->creationRulesCallback,
-            static fn ($callback) => Arr::wrap(call_user_func($callback, $request)),
-            []
-        );
+        return transform($this->creationRulesCallback, function ($callback) use ($request) {
+            return Arr::wrap(call_user_func($callback, $request));
+        }, []);
     }
 }

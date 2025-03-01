@@ -26,12 +26,9 @@ class DispatchServingNovaEvent
             Model::preventAccessingMissingAttributes(false);
         }
 
-        /** @var \Illuminate\Contracts\Foundation\Application $app */
-        $app = Container::getInstance();
+        ServingNova::dispatch($request);
 
-        ServingNova::dispatch($app, $request);
-
-        $app->forgetInstance(NovaRequest::class);
+        Container::getInstance()->forgetInstance(NovaRequest::class);
 
         $response = $next($request);
 

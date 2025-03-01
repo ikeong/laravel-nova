@@ -2,9 +2,9 @@
 
 namespace Laravel\Nova\Http\Resources;
 
-use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Laravel\Nova\Http\Requests\LensRequest;
-use Laravel\Nova\Lenses\Lens;
+use Laravel\Nova\Query\ApplySoftDeleteConstraint;
 
 class LensViewResource extends Resource
 {
@@ -21,7 +21,7 @@ class LensViewResource extends Resource
         $query = $request->newSearchQuery();
 
         if ($request->resourceSoftDeletes()) {
-            $request->trashed()->applySoftDeleteConstraint($query);
+            (new ApplySoftDeleteConstraint)->__invoke($query, $request->trashed);
         }
 
         $paginator = $lens->query($request, $query);
@@ -32,14 +32,16 @@ class LensViewResource extends Resource
 
         return [
             'name' => $lens->name(),
-            'resources' => $resources = $request->toResources($paginator->getCollection()), // @phpstan-ignore method.notFound
-            'prevPageUrl' => $paginator->previousPageUrl(),
-            'nextPageUrl' => $paginator->nextPageUrl(),
-            'perPage' => $paginator->perPage(),
+            'resources' => $resources = $request->toResources($paginator->getCollection()),
+            'prev_page_url' => $paginator->previousPageUrl(),
+            'next_page_url' => $paginator->nextPageUrl(),
+            'per_page' => $paginator->perPage(),
+            'per_page_options' => $request->resource()::perPageOptions(),
             'softDeletes' => $request->resourceSoftDeletes(),
             'hasId' => $resources->pluck('id')
-                ->reject(static fn ($field) => is_null($field->value))
-                ->isNotEmpty(),
+                        ->reject(function ($field) {
+                            return is_null($field->value);
+                        })->isNotEmpty(),
             'polling' => $lens::$polling,
             'pollingInterval' => $lens::$pollingInterval * 1000,
             'showPollingToggle' => $lens::$showPollingToggle,
@@ -49,10 +51,12 @@ class LensViewResource extends Resource
     /**
      * Get authorized resource for the request.
      *
+     * @param  \Laravel\Nova\Http\Requests\LensRequest  $request
+     * @return \Laravel\Nova\Lenses\Lens
      *
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function authorizedLensForRequest(LensRequest $request): Lens
+    public function authorizedLensForRequest(LensRequest $request)
     {
         return $request->lens();
     }

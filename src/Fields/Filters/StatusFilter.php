@@ -3,7 +3,6 @@
 namespace Laravel\Nova\Fields\Filters;
 
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Laravel\Nova\Nova;
 
 class StatusFilter extends Filter
 {
@@ -17,14 +16,15 @@ class StatusFilter extends Filter
     /**
      * Get the filter's available options.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return array
      */
     public function options(NovaRequest $request)
     {
         return [
-            'loading' => Nova::__('Loading'),
-            'finished' => Nova::__('Finished'),
-            'failed' => Nova::__('Failed'),
+            'loading' => __('Loading'),
+            'finished' => __('Finished'),
+            'failed' => __('Failed'),
         ];
     }
 

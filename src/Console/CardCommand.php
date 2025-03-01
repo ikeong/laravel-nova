@@ -30,41 +30,41 @@ class CardCommand extends ComponentGeneratorCommand
      *
      * @return void
      */
-    public function handle(Filesystem $files)
+    public function handle()
     {
         if (! $this->hasValidNameArgument()) {
             return;
         }
 
-        $files->copyDirectory(
+        (new Filesystem)->copyDirectory(
             __DIR__.'/card-stubs',
             $this->componentPath()
         );
 
         // Card.js replacements...
-        $files->replaceInFile('{{ title }}', $this->componentTitle(), $this->componentPath().'/resources/js/components/Card.vue');
-        $files->replaceInFile('{{ component }}', $this->componentName(), $this->componentPath().'/resources/js/card.js');
+        $this->replace('{{ title }}', $this->componentTitle(), $this->componentPath().'/resources/js/components/Card.vue');
+        $this->replace('{{ component }}', $this->componentName(), $this->componentPath().'/resources/js/card.js');
 
         // Card.php replacements...
-        $files->replaceInFile('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/Card.stub');
-        $files->replaceInFile('{{ class }}', $this->componentClass(), $this->componentPath().'/src/Card.stub');
-        $files->replaceInFile('{{ component }}', $this->componentName(), $this->componentPath().'/src/Card.stub');
+        $this->replace('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/Card.stub');
+        $this->replace('{{ class }}', $this->componentClass(), $this->componentPath().'/src/Card.stub');
+        $this->replace('{{ component }}', $this->componentName(), $this->componentPath().'/src/Card.stub');
 
-        $files->move(
+        (new Filesystem)->move(
             $this->componentPath().'/src/Card.stub',
             $this->componentPath().'/src/'.$this->componentClass().'.php'
         );
 
         // CardServiceProvider.php replacements...
-        $files->replaceInFile('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/CardServiceProvider.stub');
-        $files->replaceInFile('{{ component }}', $this->componentName(), $this->componentPath().'/src/CardServiceProvider.stub');
-        $files->replaceInFile('{{ name }}', $this->componentName(), $this->componentPath().'/src/CardServiceProvider.stub');
+        $this->replace('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/CardServiceProvider.stub');
+        $this->replace('{{ component }}', $this->componentName(), $this->componentPath().'/src/CardServiceProvider.stub');
+        $this->replace('{{ name }}', $this->componentName(), $this->componentPath().'/src/CardServiceProvider.stub');
 
         // webpack.mix.js replacements...
-        $files->replaceInFile('{{ name }}', $this->component(), $this->componentPath().'/webpack.mix.js');
+        $this->replace('{{ name }}', $this->component(), $this->componentPath().'/webpack.mix.js');
 
         // Card composer.json replacements...
-        $this->prepareComposerReplacements($files);
+        $this->prepareComposerReplacements();
 
         // Rename the stubs with the proper file extensions...
         $this->renameStubs();

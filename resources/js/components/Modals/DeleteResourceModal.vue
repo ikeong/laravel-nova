@@ -4,10 +4,8 @@
       @submit.prevent="handleConfirm"
       class="mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden"
     >
-      <slot name="header">
-        <ModalHeader v-text="modalTitle" />
-      </slot>
-      <slot name="content">
+      <slot>
+        <ModalHeader v-text="__(`${uppercaseMode} Resource`)" />
         <ModalContent>
           <p class="leading-normal">
             {{
@@ -21,15 +19,14 @@
 
       <ModalFooter>
         <div class="ml-auto">
-          <Button
-            variant="link"
-            state="mellow"
+          <LinkButton
+            type="button"
+            dusk="cancel-delete-button"
             @click.prevent="handleClose"
             class="mr-3"
-            dusk="cancel-delete-button"
           >
             {{ __('Cancel') }}
-          </Button>
+          </LinkButton>
 
           <Button
             type="submit"
@@ -45,64 +42,57 @@
   </Modal>
 </template>
 
-<script setup>
-import { mapProps } from '@/mixins'
-import { Button } from 'laravel-nova-ui'
-import { computed, ref, watch } from 'vue'
-import { useLocalization } from '@/composables/useLocalization'
-import { useResourceInformation } from '@/composables/useResourceInformation'
-import isNull from 'lodash/isNull'
+<script>
 import startCase from 'lodash/startCase'
+import { Button } from 'laravel-nova-ui'
 
-const emitter = defineEmits(['confirm', 'close'])
-
-const { __ } = useLocalization()
-const { resourceInformation } = useResourceInformation()
-
-const working = ref(false)
-
-const props = defineProps({
-  show: { type: Boolean, default: false },
-
-  mode: {
-    type: String,
-    default: 'delete',
-    validator: v => ['force delete', 'delete', 'detach'].includes(v),
+export default {
+  components: {
+    Button,
   },
 
-  ...mapProps(['resourceName']),
-})
+  emits: ['confirm', 'close'],
 
-watch(
-  () => props.show,
-  showing => {
-    if (showing === false) {
-      working.value = false
-    }
-  }
-)
+  props: {
+    show: { type: Boolean, default: false },
 
-const uppercaseMode = computed(() => startCase(props.mode))
+    mode: {
+      type: String,
+      default: 'delete',
+      validator: function (value) {
+        return ['force delete', 'delete', 'detach'].indexOf(value) !== -1
+      },
+    },
+  },
 
-const modalTitle = computed(() => {
-  const resource = resourceInformation(props.resourceName)
+  data: () => ({
+    working: false,
+  }),
 
-  if (isNull(resource)) {
-    return __(`${uppercaseMode.value} Resource`)
-  }
+  watch: {
+    show(showing) {
+      if (showing === false) {
+        this.working = false
+      }
+    },
+  },
 
-  return __(`${uppercaseMode.value} :resource`, {
-    resource: resource.singularLabel,
-  })
-})
+  methods: {
+    handleClose() {
+      this.$emit('close')
+      this.working = false
+    },
 
-function handleClose() {
-  emitter('close')
-  working.value = false
-}
+    handleConfirm() {
+      this.$emit('confirm')
+      this.working = true
+    },
+  },
 
-function handleConfirm() {
-  emitter('confirm')
-  working.value = true
+  computed: {
+    uppercaseMode() {
+      return startCase(this.mode)
+    },
+  },
 }
 </script>

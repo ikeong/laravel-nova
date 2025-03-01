@@ -2,25 +2,14 @@
 
 namespace Laravel\Nova\Fields;
 
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Laravel\Nova\Resource;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/**
- * @phpstan-type TResourceModel \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|\stdClass
- * @phpstan-type TDownloadResponse \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\StreamedResponse
- * @phpstan-type TDownloadResponseCallback (callable(\Laravel\Nova\Http\Requests\NovaRequest, TResourceModel, ?string, ?string):(TDownloadResponse))
- */
 trait HasDownload
 {
     /**
      * The callback used to generate the download HTTP response.
      *
-     * @var (callable(\Laravel\Nova\Http\Requests\NovaRequest, object, ?string, ?string):(mixed))|null
-     *
-     * @phpstan-var TDownloadResponseCallback|null
+     * @var (callable(\Laravel\Nova\Http\Requests\NovaRequest, \Laravel\Nova\Resource, ?string, ?string):(mixed))|null
      */
     public $downloadResponseCallback;
 
@@ -46,10 +35,8 @@ trait HasDownload
     /**
      * Specify the callback that should be used to create a download HTTP response.
      *
-     * @param  callable(\Laravel\Nova\Http\Requests\NovaRequest, object, ?string, ?string):mixed  $downloadResponseCallback
+     * @param  callable(\Laravel\Nova\Http\Requests\NovaRequest, \Laravel\Nova\Resource, ?string, ?string):mixed  $downloadResponseCallback
      * @return $this
-     *
-     * @phpstan-param TDownloadResponseCallback $downloadResponseCallback
      */
     public function download(callable $downloadResponseCallback)
     {
@@ -60,8 +47,12 @@ trait HasDownload
 
     /**
      * Create an HTTP response to download the underlying field.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  \Laravel\Nova\Resource  $resource
+     * @return \Illuminate\Http\Response
      */
-    public function toDownloadResponse(NovaRequest $request, Resource $resource): Response|RedirectResponse|StreamedResponse
+    public function toDownloadResponse(NovaRequest $request, $resource)
     {
         return call_user_func(
             $this->downloadResponseCallback,

@@ -2,10 +2,9 @@ import { computed } from 'vue'
 
 export function useFilePreviews(file) {
   const imageTypes = [
-    'image/avif',
-    'image/gif',
-    'image/jpeg',
     'image/png',
+    'image/jpeg',
+    'image/gif',
     'image/svg+xml',
     'image/webp',
   ]

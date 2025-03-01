@@ -1,7 +1,11 @@
 import { Errors } from '@/mixins'
 import { computed, nextTick, reactive } from 'vue'
+import each from 'lodash/each'
+import find from 'lodash/find'
 import filter from 'lodash/filter'
+import isNil from 'lodash/isNil'
 import isObject from 'lodash/isObject'
+import map from 'lodash/map'
 import tap from 'lodash/tap'
 import trim from 'lodash/trim'
 import { useLocalization } from '@/composables/useLocalization'
@@ -16,14 +20,14 @@ export function useActions(props, emitter, store) {
     responseModalVisible: false,
     selectedActionKey: '',
     endpoint: props.endpoint || `/nova-api/${props.resourceName}/action`,
-    actionModalReponseData: null,
+    actionResponseData: null,
   })
 
   const selectedResources = computed(() => props.selectedResources)
 
   const selectedAction = computed(() => {
     if (state.selectedActionKey) {
-      return allActions.value.find(a => a.uriKey === state.selectedActionKey)
+      return find(allActions.value, a => a.uriKey === state.selectedActionKey)
     }
   })
 
@@ -56,7 +60,8 @@ export function useActions(props, emitter, store) {
   )
 
   const availableActions = computed(() => {
-    return props.actions.filter(
+    return filter(
+      props.actions,
       action => selectedResources.value.length > 0 && !action.standalone
     )
   })
@@ -66,7 +71,7 @@ export function useActions(props, emitter, store) {
       return []
     }
 
-    return props.pivotActions.actions.filter(action => {
+    return filter(props.pivotActions.actions, action => {
       if (selectedResources.value.length === 0) {
         return action.standalone
       }
@@ -80,7 +85,7 @@ export function useActions(props, emitter, store) {
   const selectedActionIsPivotAction = computed(() => {
     return (
       hasPivotActions.value &&
-      Boolean(props.pivotActions.actions.find(a => a === selectedAction.value))
+      Boolean(find(props.pivotActions.actions, a => a === selectedAction.value))
     )
   })
 
@@ -103,14 +108,14 @@ export function useActions(props, emitter, store) {
         formData.append('resources', 'all')
       } else {
         let pivotIds = filter(
-          selectedResources.value.map(resource =>
+          map(selectedResources.value, resource =>
             isObject(resource) ? resource.id.pivotValue : null
           )
         )
 
-        selectedResources.value.forEach(resource =>
-          formData.append(
-            'resources[]',
+        formData.append(
+          'resources',
+          map(selectedResources.value, resource =>
             isObject(resource) ? resource.id.value : resource
           )
         )
@@ -120,11 +125,11 @@ export function useActions(props, emitter, store) {
           selectedActionIsPivotAction.value === true &&
           pivotIds.length > 0
         ) {
-          pivotIds.forEach(pivotId => formData.append('pivots[]', pivotId))
+          formData.append('pivots', pivotIds)
         }
       }
 
-      selectedAction.value.fields.forEach(field => {
+      each(selectedAction.value.fields, field => {
         field.fill(formData)
       })
     })
@@ -212,7 +217,7 @@ export function useActions(props, emitter, store) {
 
     if (
       data instanceof Blob &&
-      contentDisposition == null &&
+      isNil(contentDisposition) &&
       data.type === 'application/json'
     ) {
       data.text().then(jsonStringData => {
@@ -249,7 +254,7 @@ export function useActions(props, emitter, store) {
     }
 
     if (data.modal) {
-      state.actionModalReponseData = data.modal
+      state.actionResponseData = data
 
       showActionResponseMessage(data)
 
@@ -262,8 +267,8 @@ export function useActions(props, emitter, store) {
 
         await nextTick(() => {
           let link = document.createElement('a')
-          link.href = data.download.url
-          link.download = data.download.name
+          link.href = data.download
+          link.download = data.name
           document.body.appendChild(link)
           link.click()
           document.body.removeChild(link)
@@ -276,13 +281,7 @@ export function useActions(props, emitter, store) {
     }
 
     if (data.redirect) {
-      if (data.redirect.openInNewTab) {
-        return emitResponseCallback(() =>
-          window.open(data.redirect.url, '_blank')
-        )
-      } else {
-        window.location = data.redirect.url
-      }
+      window.location = data.redirect
     }
 
     if (data.visit) {
@@ -292,6 +291,12 @@ export function useActions(props, emitter, store) {
         url: Nova.url(data.visit.path, data.visit.options),
         remote: false,
       })
+    }
+
+    if (data.openInNewTab) {
+      return emitResponseCallback(() =>
+        window.open(data.openInNewTab, '_blank')
+      )
     }
 
     emitResponseCallback(() => showActionResponseMessage(data))
@@ -324,6 +329,6 @@ export function useActions(props, emitter, store) {
     availableActions,
     availablePivotActions,
     executeAction,
-    actionModalReponseData: computed(() => state.actionModalReponseData),
+    actionResponseData: computed(() => state.actionResponseData),
   }
 }

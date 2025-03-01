@@ -3,7 +3,7 @@
 namespace Laravel\Nova\Http\Requests;
 
 use Closure;
-use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use LogicException;
 
 /**
@@ -17,16 +17,18 @@ class LensResourceDeletionRequest extends NovaRequest
     /**
      * Get the selected models for the action in chunks.
      *
+     * @param  int  $count
      * @param  \Closure(\Illuminate\Support\Collection):void  $callback
      * @param  \Closure(\Illuminate\Support\Collection):\Illuminate\Support\Collection  $authCallback
+     * @return mixed
      */
-    protected function chunkWithAuthorization(int $count, Closure $callback, Closure $authCallback): void
+    protected function chunkWithAuthorization($count, Closure $callback, Closure $authCallback)
     {
         $this->toSelectedResourceQuery()->when(! $this->allResourcesSelected(), function ($query) {
             $query->whereKey($this->resources);
-        })->tap(static function ($query) {
+        })->tap(function ($query) {
             $query->getQuery()->orders = [];
-        })->chunkById($count, static function ($models) use ($callback, $authCallback) {
+        })->chunkById($count, function ($models) use ($callback, $authCallback) {
             $models = $authCallback($models);
 
             if ($models->isNotEmpty()) {
@@ -37,22 +39,24 @@ class LensResourceDeletionRequest extends NovaRequest
 
     /**
      * Get the query for the models that were selected by the user.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    protected function toSelectedResourceQuery(): Builder
+    protected function toSelectedResourceQuery()
     {
         return $this->allResourcesSelected()
-            ? $this->toQuery()
-            : $this->newQueryWithoutScopes();
+                    ? $this->toQuery()
+                    : $this->newQueryWithoutScopes();
     }
 
     /**
      * Transform the request into a query.
      *
-     * @throws \LogicException
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function toQuery(): Builder
+    public function toQuery()
     {
-        return tap($this->lens()->query(LensRequest::createFrom($this), $this->newSearchQuery()), static function ($query) {
+        return tap($this->lens()->query(LensRequest::createFrom($this), $this->newSearchQuery()), function ($query) {
             if (! $query instanceof Builder) {
                 throw new LogicException('Lens must return an Eloquent query instance in order to perform this action.');
             }

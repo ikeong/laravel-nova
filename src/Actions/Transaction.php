@@ -13,17 +13,18 @@ class Transaction
      *
      * @param  callable(string):mixed  $callback
      * @param  (callable(string):(void))|null  $finished
+     * @return mixed
      *
      * @throws \Throwable
      */
-    public static function run(callable $callback, ?callable $finished = null): mixed
+    public static function run($callback, $finished = null)
     {
         try {
             DB::beginTransaction();
 
             $actionBatchId = (string) Str::orderedUuid();
 
-            return tap($callback($actionBatchId), static function ($response) use ($finished, $actionBatchId) {
+            return tap($callback($actionBatchId), function ($response) use ($finished, $actionBatchId) {
                 if ($finished) {
                     $finished($actionBatchId);
                 }

@@ -2,7 +2,6 @@
 
 namespace Laravel\Nova\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionCollection;
@@ -15,10 +14,13 @@ class ActionController extends Controller
 {
     /**
      * List the actions for the given resource.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function index(NovaRequest $request): JsonResponse
+    public function index(NovaRequest $request)
     {
-        $resourceId = with($request->input('resources'), static function ($resourceIds) {
+        $resourceId = with($request->input('resources'), function ($resourceIds) {
             return is_array($resourceIds) && count($resourceIds) === 1 ? $resourceIds[0] : null;
         });
 
@@ -32,12 +34,11 @@ class ActionController extends Controller
                 'name' => Nova::humanize($request->pivotName()),
                 'actions' => $resource->availablePivotActions($request),
             ],
-        ], static function ($payload) use ($resource, $request) {
+        ], function ($payload) use ($resource, $request) {
             $actionCounts = ($request->display !== 'detail' ? $payload['actions'] : $resource->resolveActions($request))->countsByTypeOnIndex();
             $pivotActionCounts = ActionCollection::make($payload['pivotActions']['actions'])->countsByTypeOnIndex();
 
             $payload['counts'] = [
-                'sole' => $actionCounts['sole'] + $pivotActionCounts['sole'],
                 'standalone' => $actionCounts['standalone'] + $pivotActionCounts['standalone'],
                 'resource' => $actionCounts['resource'] + $pivotActionCounts['resource'],
             ];
@@ -48,8 +49,11 @@ class ActionController extends Controller
 
     /**
      * Perform an action on the specified resources.
+     *
+     * @param  \Laravel\Nova\Http\Requests\ActionRequest  $request
+     * @return \Illuminate\Http\Response
      */
-    public function store(ActionRequest $request): mixed
+    public function store(ActionRequest $request)
     {
         $request->validateFields();
 
@@ -58,17 +62,22 @@ class ActionController extends Controller
 
     /**
      * Sync an action field on the specified resources.
+     *
+     * @param  \Laravel\Nova\Http\Requests\ActionRequest  $request
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function sync(ActionRequest $request): JsonResponse
+    public function sync(ActionRequest $request)
     {
         $action = $this->availableActions($request, $request->newResource())
-            ->first(static fn ($action) => $action->uriKey() === $request->query('action'));
+            ->first(function ($action) use ($request) {
+                return $action->uriKey() === $request->query('action');
+            });
 
         abort_unless($action instanceof Action, 404);
 
         return response()->json(
             collect($action->fields($request))
-                ->filter(static function ($field) use ($request) {
+                ->filter(function ($field) use ($request) {
                     return $request->query('field') === $field->attribute &&
                         $request->query('component') === $field->dependentComponentKey();
                 })->each->syncDependsOn($request)
@@ -79,15 +88,22 @@ class ActionController extends Controller
     /**
      * Get the available actions for the request.
      *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  \Laravel\Nova\Resource  $resource
      * @return \Laravel\Nova\Actions\ActionCollection<int, \Laravel\Nova\Actions\Action>
      */
-    protected function availableActions(NovaRequest $request, Resource $resource): ActionCollection
+    protected function availableActions(NovaRequest $request, Resource $resource)
     {
-        $method = match ($request->display) {
-            'index' => 'availableActionsOnIndex',
-            'detail' => 'availableActionsOnDetail',
-            default => 'availableActions',
-        };
+        switch ($request->display) {
+            case 'index':
+                $method = 'availableActionsOnIndex';
+                break;
+            case 'detail':
+                $method = 'availableActionsOnDetail';
+                break;
+            default:
+                $method = 'availableActions';
+        }
 
         return $resource->{$method}($request);
     }

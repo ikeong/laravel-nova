@@ -5,42 +5,17 @@ export default {
   data: () => ({
     filterHasLoaded: false,
     filterIsActive: false,
-    filtersAreApplied: false,
   }),
 
   watch: {
-    encodedFilters(newValue, oldValue) {
-      if (
-        this.filterHasLoaded == false ||
-        newValue === this.initialEncodedFilters ||
-        ('' === this.initialEncodedFilters && this.filtersAreApplied === false)
-      ) {
-        return
-      }
-
-      Nova.$emit('filter-changed', [newValue])
-
-      const query = {
-        [this.filterParameter]: this.encodedFilters,
-      }
-
-      if (newValue !== oldValue) {
-        query[this.pageParameter] = 1
-      }
-
-      this.pushAfterUpdatingQueryString(query)
+    encodedFilters(value) {
+      Nova.$emit('filter-changed', [value])
     },
-  },
-
-  created() {
-    this.filterCurrentEncoded = this.encodedFilters
   },
 
   methods: {
     /**
-     * Clear filters and reset the resource table.
-     *
-     * @param {string|null} lens
+     * Clear filters and reset the resource table
      */
     async clearSelectedFilters(lens) {
       if (lens) {
@@ -54,7 +29,7 @@ export default {
         })
       }
 
-      this.pushAfterUpdatingQueryString({
+      this.updateQueryString({
         [this.pageParameter]: 1,
         [this.filterParameter]: '',
       })
@@ -66,18 +41,20 @@ export default {
      * Handle a filter state change.
      */
     filterChanged() {
-      this.filtersAreApplied =
+      let filtersAreApplied =
         this.$store.getters[`${this.resourceName}/filtersAreApplied`]
 
-      if (this.filtersAreApplied || this.filterIsActive) {
+      if (filtersAreApplied || this.filterIsActive) {
         this.filterIsActive = true
+        this.updateQueryString({
+          [this.pageParameter]: 1,
+          [this.filterParameter]: this.encodedFilters,
+        })
       }
     },
 
     /**
-     * Set up filters for the current view.
-     *
-     * @param {string|null} lens
+     * Set up filters for the current view
      */
     async initializeFilters(lens) {
       if (this.filterHasLoaded === true) {
@@ -108,9 +85,7 @@ export default {
     },
 
     /**
-     * Initialize the filter state.
-     *
-     * @param {string|null} lens
+     * Initialize the filter state
      */
     async initializeState(lens) {
       this.initialEncodedFilters
@@ -128,18 +103,11 @@ export default {
   computed: {
     /**
      * Get the name of the filter query string variable.
-     *
-     * @param {string}
      */
     filterParameter() {
-      return `${this.resourceName}_filter`
+      return this.resourceName + '_filter'
     },
 
-    /**
-     * Return the currently encoded filter string from the store.
-     *
-     * @param {string}
-     */
     encodedFilters() {
       return this.$store.getters[`${this.resourceName}/currentEncodedFilters`]
     },

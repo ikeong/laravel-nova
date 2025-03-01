@@ -2,15 +2,16 @@
 
 namespace Laravel\Nova\Testing\Browser\Components;
 
-use Closure;
 use Laravel\Dusk\Browser;
 
 class HeaderComponent extends Component
 {
     /**
      * Get the root selector for the component.
+     *
+     * @return string
      */
-    public function selector(): string
+    public function selector()
     {
         return 'div#app header';
     }
@@ -18,31 +19,38 @@ class HeaderComponent extends Component
     /**
      * Assert that the browser page contains the component.
      *
+     * @return void
+     *
      * @throws \Facebook\WebDriver\Exception\TimeOutException
      */
-    public function assert(Browser $browser): void
+    public function assert(Browser $browser)
     {
-        tap($this->selector(), static function (string $selector) use ($browser) {
+        tap($this->selector(), function ($selector) use ($browser) {
             $browser->scrollIntoView($selector);
         });
     }
 
     /**
      * Open notification panel.
+     *
+     * @param  callable|null  $notificationCallback
+     * @return void
      */
-    public function showNotificationPanel(Browser $browser, ?Closure $notificationCallback = null): void
+    public function showNotificationPanel(Browser $browser, $notificationCallback = null)
     {
         $browser
             ->click('@notifications-dropdown')
-            ->elsewhereWhenAvailable('@notifications-content', $notificationCallback ?? static function (Browser $browser) {
+            ->elsewhereWhenAvailable('@notifications-content', $notificationCallback ?? function ($browser) {
                 //
             });
     }
 
     /**
      * Get the element shortcuts for the component.
+     *
+     * @return array
      */
-    public function elements(): array
+    public function elements()
     {
         return [];
     }
