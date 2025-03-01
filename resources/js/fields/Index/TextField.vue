@@ -2,7 +2,11 @@
   <div :class="`text-${field.textAlign}`">
     <template v-if="fieldValue">
       <CopyButton
-        v-if="fieldValue && field.copyable && !shouldDisplayAsHtml"
+        v-if="
+          fieldHasValueOrCustomizedDisplay &&
+          field.copyable &&
+          !shouldDisplayAsHtml
+        "
         @click.prevent.stop="copy"
         v-tooltip="__('Copy to clipboard')"
       >
@@ -12,14 +16,22 @@
       </CopyButton>
 
       <span
-        v-else-if="fieldValue && !field.copyable && !shouldDisplayAsHtml"
+        v-else-if="
+          fieldHasValueOrCustomizedDisplay &&
+          !field.copyable &&
+          !shouldDisplayAsHtml
+        "
         class="whitespace-nowrap"
       >
         {{ fieldValue }}
       </span>
       <div
         @click.stop
-        v-else-if="fieldValue && !field.copyable && shouldDisplayAsHtml"
+        v-else-if="
+          fieldHasValueOrCustomizedDisplay &&
+          !field.copyable &&
+          shouldDisplayAsHtml
+        "
         v-html="fieldValue"
       />
       <p v-else>&mdash;</p>

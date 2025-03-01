@@ -25,7 +25,6 @@ class ResourceManager extends Tool implements HasMenu
     /**
      * Build the menu that renders the navigation links for the tool.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return mixed
      */
     public function menu(Request $request)
@@ -35,7 +34,7 @@ class ResourceManager extends Tool implements HasMenu
                 ? $this->groupedMenu($resources, $request)
                 : $this->unGroupedMenu($resources, $request);
 
-            return tap(MenuSection::make(Nova::__('Resources'), $resources), function ($section) use ($resources) {
+            return tap(MenuSection::make(Nova::__('Resources'), $resources), static function ($section) use ($resources) {
                 if ($resources->count() > 1) {
                     $section->collapsable();
                 }
@@ -51,7 +50,8 @@ class ResourceManager extends Tool implements HasMenu
      */
     public function unGroupedMenu($resources, Request $request)
     {
-        return $resources->flatten()->map(function ($resource) use ($request) {
+        /** @phpstan-ignore argument.templateType */
+        return $resources->flatten()->map(static function ($resource) use ($request) {
             if (method_exists($resource, 'menu')) {
                 return (new $resource)->menu($request);
             }
@@ -68,8 +68,8 @@ class ResourceManager extends Tool implements HasMenu
      */
     public function groupedMenu($resources, Request $request)
     {
-        return $resources->map(function ($group, $key) use ($request) {
-            return MenuGroup::make($key, $group->map(function ($resource) use ($request) {
+        return $resources->map(static function ($group, $key) use ($request) {
+            return MenuGroup::make($key, $group->map(static function ($resource) use ($request) {
                 if (method_exists($resource, 'menu')) {
                     return (new $resource)->menu($request);
                 }

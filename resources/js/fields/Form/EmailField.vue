@@ -8,12 +8,13 @@
     <template #field>
       <input
         v-bind="extraAttributes"
-        class="w-full form-control form-input form-control-bordered"
-        @input="handleChange"
         :value="value"
         :id="currentField.uniqueKey"
-        :dusk="field.attribute"
         :disabled="currentlyIsReadonly"
+        @input="handleChange"
+        class="w-full form-control form-input form-control-bordered"
+        :autocomplete="currentField.autocomplete"
+        :dusk="field.attribute"
       />
     </template>
   </DefaultField>
@@ -33,7 +34,7 @@ export default {
         // uses the old field attributes
         type: this.currentField.type || 'email',
         pattern: this.currentField.pattern,
-        placeholder: this.currentField.placeholder || this.field.name,
+        placeholder: this.placeholder,
         class: this.errorClasses,
         ...this.currentField.extraAttributes,
       }

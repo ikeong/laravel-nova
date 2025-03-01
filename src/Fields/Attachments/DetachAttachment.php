@@ -2,7 +2,7 @@
 
 namespace Laravel\Nova\Fields\Attachments;
 
-use Illuminate\Http\Request;
+use Laravel\Nova\Http\Requests\NovaRequest;
 
 class DetachAttachment
 {
@@ -15,15 +15,11 @@ class DetachAttachment
 
     /**
      * Delete an attachment from the field.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return void
      */
-    public function __invoke(Request $request)
+    public function __invoke(NovaRequest $request): void
     {
         static::$model::where('url', $request->attachmentUrl)
-                    ->get()
-                    ->each
-                    ->purge();
+            ->get()
+            ->each->purge();
     }
 }

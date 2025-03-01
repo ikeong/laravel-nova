@@ -18,10 +18,10 @@ import {
   ref,
   Teleport,
   Transition,
+  useId,
   watch,
   withModifiers,
 } from 'vue'
-import { useId } from '../../composables/useId'
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
 import { renderSlotFragments } from '../../util/renderSlotFragments'
 import { useCloseOnEsc } from '../../composables/useCloseOnEsc'
@@ -45,6 +45,8 @@ export default {
     const teleportedRef = ref(null)
     const menuRef = ref(null)
 
+    const dropdownId = useId()
+
     const { activate, deactivate } = useFocusTrap(menuRef, {
       initialFocus: false,
       allowOutsideClick: true,
@@ -67,9 +69,9 @@ export default {
     useCloseOnEsc(() => (menuShown.value = false))
 
     const dropdownButtonLabel = computed(
-      () => `nova-ui-dropdown-button-${useId()}`
+      () => `nova-ui-dropdown-button-${dropdownId}`
     )
-    const menuLabel = computed(() => `nova-ui-dropdown-menu-${useId()}`)
+    const menuLabel = computed(() => `nova-ui-dropdown-menu-${dropdownId}`)
 
     const resolvedPlacement = computed(() => {
       if (!Nova.config('rtlEnabled')) {
@@ -176,7 +178,7 @@ export default {
                           id: menuLabel.value,
                           'aria-labelledby': dropdownButtonLabel.value,
                           tabindex: '0',
-                          class: 'relative z-[50]',
+                          class: 'relative z-[70]',
                           style: floatingStyles.value,
                           'data-menu-open': menuShown.value,
                           dusk: 'dropdown-menu',
@@ -188,7 +190,7 @@ export default {
                         slots.menu()
                       ),
                       h('div', {
-                        class: 'z-[49] fixed inset-0',
+                        class: 'z-[69] fixed inset-0',
                         dusk: 'dropdown-overlay',
                         onClick: () => (menuShown.value = false),
                       }),

@@ -4,10 +4,12 @@ namespace Laravel\Nova\Fields;
 
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Laravel\Nova\Nova;
+use Laravel\Nova\Resource;
 use Laravel\Nova\Util;
 
 /**
- * @method static static make(mixed $name = null, string|null $attribute = null, callable|null $resolveCallback = null)
+ * @method static static make(\Stringable|string|null $name = null, string|null $attribute = null, callable|null $resolveCallback = null)
  */
 class ID extends Field
 {
@@ -21,57 +23,52 @@ class ID extends Field
     /**
      * The field's resolved pivot value.
      *
-     * @var mixed
+     * @var string|int|null
      */
     public $pivotValue = null;
 
     /**
      * Create a new field.
      *
-     * @param  string|null  $name
-     * @param  string|null  $attribute
+     * @param  \Stringable|string|null  $name
      * @param  (callable(mixed, mixed, ?string):(mixed))|null  $resolveCallback
      * @return void
      */
-    public function __construct($name = null, $attribute = null, $resolveCallback = null)
+    public function __construct($name = null, ?string $attribute = null, ?callable $resolveCallback = null)
     {
-        parent::__construct($name ?? 'ID', $attribute, $resolveCallback);
+        if (is_null($name)) {
+            $attribute ??= 'id';
+            $name = Nova::__('ID');
+        }
+
+        parent::__construct($name, $attribute, $resolveCallback);
     }
 
     /**
      * Create a new hidden ID field.
      *
-     * @param  string  $name
-     * @param  string  $attribute
-     * @param  callable|null  $resolveCallback
-     * @return \Laravel\Nova\Fields\Hidden
+     * @param  \Stringable|string  $name
      */
-    public static function hidden($name = 'ID', $attribute = 'id', callable $resolveCallback = null)
+    public static function hidden($name = 'ID', string $attribute = 'id', ?callable $resolveCallback = null): Hidden
     {
         return Hidden::make($name, $attribute, $resolveCallback);
     }
 
     /**
      * Create a new, resolved ID field for the given resource.
-     *
-     * @param  \Laravel\Nova\Resource  $resource
-     * @return static|null
      */
-    public static function forResource($resource)
+    public static function forResource(Resource $resource): ?static
     {
         $model = $resource->model();
 
         /** @var static|null $field */
+        /** @phpstan-ignore argument.templateType */
         $field = transform(
             $resource->availableFieldsOnIndexOrDetail(app(NovaRequest::class))
                     ->whereInstanceOf(self::class)
                     ->first(),
-            function ($field) use ($model) {
-                return tap($field)->resolve($model);
-            },
-            function () use ($model) {
-                return ! is_null($model) && $model->exists ? static::forModel($model) : null;
-            }
+            static fn ($field) => tap($field)->resolve($model),
+            static fn () => ! is_null($model) && $model->exists ? static::forModel($model) : null,
         );
 
         if ($field instanceof static) {
@@ -85,11 +82,10 @@ class ID extends Field
      * Create a new, resolved ID field for the given model.
      *
      * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return static
      */
-    public static function forModel($model)
+    public static function forModel($model): static
     {
-        return tap(static::make('ID', $model->getKeyName()), function ($field) use ($model) {
+        return tap(static::make('ID', $model->getKeyName()), static function ($field) use ($model) {
             $value = $model->getKey();
 
             if (is_int($value) && $value >= 9007199254740991) {
@@ -103,11 +99,10 @@ class ID extends Field
     /**
      * Resolve the given attribute from the given resource.
      *
-     * @param  mixed  $resource
-     * @param  string  $attribute
-     * @return mixed
+     * @param  \Laravel\Nova\Resource|\Illuminate\Database\Eloquent\Model|object  $resource
      */
-    protected function resolveAttribute($resource, $attribute)
+    #[\Override]
+    protected function resolveAttribute($resource, string $attribute): string|int|null
     {
         if ($resource instanceof Model) {
             $pivotAccessor = $this->pivotAccessor ?? 'pivot';
@@ -133,9 +128,7 @@ class ID extends Field
      */
     public function asBigInt()
     {
-        $this->resolveCallback = function ($id) {
-            return (string) $id;
-        };
+        $this->resolveCallback = static fn ($id) => (string) $id;
 
         return $this;
     }
@@ -160,6 +153,7 @@ class ID extends Field
      *
      * @return array<string, mixed>
      */
+    #[\Override]
     public function jsonSerialize(): array
     {
         return array_merge(parent::jsonSerialize(), array_filter([

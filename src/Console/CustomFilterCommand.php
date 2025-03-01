@@ -30,66 +30,45 @@ class CustomFilterCommand extends ComponentGeneratorCommand
      *
      * @return void
      */
-    public function handle()
+    public function handle(Filesystem $files)
     {
         if (! $this->hasValidNameArgument()) {
             return;
         }
 
-        (new Filesystem)->copyDirectory(
+        $files->copyDirectory(
             __DIR__.'/filter-stubs',
             $this->componentPath()
         );
 
         // Filter.js replacements...
-        $this->replace('{{ component }}', $this->componentName(), $this->componentPath().'/resources/js/filter.js');
+        $files->replaceInFile('{{ component }}', $this->componentName(), $this->componentPath().'/resources/js/filter.js');
 
         // Filter.php replacements...
-        $this->replace('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/Filter.stub');
-        $this->replace('{{ class }}', $this->componentClass(), $this->componentPath().'/src/Filter.stub');
-        $this->replace('{{ component }}', $this->componentName(), $this->componentPath().'/src/Filter.stub');
+        $files->replaceInFile('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/Filter.stub');
+        $files->replaceInFile('{{ class }}', $this->componentClass(), $this->componentPath().'/src/Filter.stub');
+        $files->replaceInFile('{{ component }}', $this->componentName(), $this->componentPath().'/src/Filter.stub');
 
-        (new Filesystem)->move(
+        $files->move(
             $this->componentPath().'/src/Filter.stub',
             $this->componentPath().'/src/'.$this->componentClass().'.php'
         );
 
         // FilterServiceProvider.php replacements...
-        $this->replace('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/FilterServiceProvider.stub');
-        $this->replace('{{ component }}', $this->componentName(), $this->componentPath().'/src/FilterServiceProvider.stub');
+        $files->replaceInFile('{{ namespace }}', $this->componentNamespace(), $this->componentPath().'/src/FilterServiceProvider.stub');
+        $files->replaceInFile('{{ component }}', $this->componentName(), $this->componentPath().'/src/FilterServiceProvider.stub');
 
         // webpack.mix.js replacements...
-        $this->replace('{{ name }}', $this->component(), $this->componentPath().'/webpack.mix.js');
+        $files->replaceInFile('{{ name }}', $this->component(), $this->componentPath().'/webpack.mix.js');
 
         // Filter composer.json replacements...
-        $this->prepareComposerReplacements();
+        $this->prepareComposerReplacements($files);
 
         // Rename the stubs with the proper file extensions...
         $this->renameStubs();
 
         // Register the filter...
         $this->buildComponent('filter');
-    }
-
-    /**
-     * Get the stub file for the generator.
-     *
-     * @return string
-     */
-    protected function getStub()
-    {
-        return __DIR__.'/stubs/filter.stub';
-    }
-
-    /**
-     * Get the default namespace for the class.
-     *
-     * @param  string  $rootNamespace
-     * @return string
-     */
-    protected function getDefaultNamespace($rootNamespace)
-    {
-        return $rootNamespace.'\Nova\Filters';
     }
 
     /**

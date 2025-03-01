@@ -3,12 +3,18 @@
 namespace Laravel\Nova\Console;
 
 use Illuminate\Console\GeneratorCommand;
+use Illuminate\Contracts\Console\PromptsForMissingInput;
 use Illuminate\Support\Str;
+use Laravel\Nova\Util;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
+
+use function Laravel\Prompts\suggest;
 
 #[AsCommand(name: 'nova:resource')]
-class ResourceCommand extends GeneratorCommand
+class ResourceCommand extends GeneratorCommand implements PromptsForMissingInput
 {
     use ResolvesStubPath;
 
@@ -58,13 +64,14 @@ class ResourceCommand extends GeneratorCommand
      *
      * @return bool|null
      */
+    #[\Override]
     public function handle()
     {
-        parent::handle();
-
         $this->callSilent('nova:base-resource', [
             'name' => 'Resource',
         ]);
+
+        return parent::handle();
     }
 
     /**
@@ -73,6 +80,7 @@ class ResourceCommand extends GeneratorCommand
      * @param  string  $name
      * @return string
      */
+    #[\Override]
     protected function buildClass($name)
     {
         $resourceName = $this->argument('name');
@@ -89,7 +97,7 @@ class ResourceCommand extends GeneratorCommand
         }
 
         if (in_array(strtolower($resourceName), $this->protectedNames)) {
-            $this->warn("You *must* override the uriKey method for your {$resourceName} resource.");
+            $this->components->warn("You *must* override the uriKey method for your {$resourceName} resource.");
         }
 
         $replace = [
@@ -110,13 +118,7 @@ class ResourceCommand extends GeneratorCommand
             return $result;
         }
 
-        $lineEndingCount = [
-            "\r\n" => substr_count($result, "\r\n"),
-            "\r" => substr_count($result, "\r"),
-            "\n" => substr_count($result, "\n"),
-        ];
-
-        $eol = array_keys($lineEndingCount, max($lineEndingCount))[0];
+        $eol = Util::eol($result);
 
         return str_replace(
             'use Laravel\Nova\Http\Requests\NovaRequest;'.$eol,
@@ -141,6 +143,7 @@ class ResourceCommand extends GeneratorCommand
      * @param  string  $rootNamespace
      * @return string
      */
+    #[\Override]
     protected function getDefaultNamespace($rootNamespace)
     {
         return $rootNamespace.'\Nova';
@@ -171,10 +174,32 @@ class ResourceCommand extends GeneratorCommand
     }
 
     /**
+     * Interact further with the user if they were prompted for missing arguments.
+     *
+     * @return void
+     */
+    protected function afterPromptingForMissingArguments(InputInterface $input, OutputInterface $output)
+    {
+        if ($this->didReceiveOptions($input)) {
+            return;
+        }
+
+        $model = suggest(
+            'Which model is this resource for? (Optional)',
+            $this->possibleModels()
+        );
+
+        if ($model) {
+            $input->setOption('model', $model);
+        }
+    }
+
+    /**
      * Get the console command options.
      *
      * @return array
      */
+    #[\Override]
     protected function getOptions()
     {
         return [

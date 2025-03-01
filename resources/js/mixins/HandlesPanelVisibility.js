@@ -1,36 +1,38 @@
-import each from 'lodash/each'
-import filter from 'lodash/filter'
+import { usePanelVisibility } from '../composables/usePanelVisibility'
 
 export default {
   emits: ['field-shown', 'field-hidden'],
 
   data: () => ({
-    visibleFieldsForPanel: {},
+    visibleFieldsForPanel: null,
   }),
 
   created() {
-    each(this.panel.fields, field => {
-      this.visibleFieldsForPanel[field.attribute] = field.visible
-    })
+    this.visibleFieldsForPanel = usePanelVisibility(this.panel, this.$emit)
   },
 
   methods: {
+    /**
+     * @param {string} field
+     */
     handleFieldShown(field) {
-      this.visibleFieldsForPanel[field] = true
-      this.$emit('field-shown', field)
+      this.visibleFieldsForPanel.handleFieldShown(field)
     },
 
+    /**
+     * @param {string} field
+     */
     handleFieldHidden(field) {
-      this.visibleFieldsForPanel[field] = false
-      this.$emit('field-hidden', field)
+      this.visibleFieldsForPanel.handleFieldHidden(field)
     },
   },
 
   computed: {
+    /**
+     * @returns {number}
+     */
     visibleFieldsCount() {
-      return Object.entries(
-        filter(this.visibleFieldsForPanel, visible => visible === true)
-      ).length
+      return this.visibleFieldsForPanel.visibleFieldsCount
     },
   },
 }

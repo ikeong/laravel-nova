@@ -9,17 +9,17 @@ trait PreviewableFields
     /**
      * Indicates whether to show the field in the modal preview.
      *
-     * @var (callable(\Laravel\Nova\Http\Requests\NovaRequest):(bool))|bool
+     * @var (callable(\Laravel\Nova\Http\Requests\NovaRequest, \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|object|array):(bool))|bool
      */
     public $showOnPreview = false;
 
     /**
      * Show the field in the modal preview.
      *
-     * @param  (callable(\Laravel\Nova\Http\Requests\NovaRequest):(bool))|bool  $callback
+     * @param  (callable(\Laravel\Nova\Http\Requests\NovaRequest, \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|object|array):(bool))|bool  $callback
      * @return $this
      */
-    public function showOnPreview($callback = true)
+    public function showOnPreview(callable|bool $callback = true)
     {
         $this->showOnPreview = $callback;
 
@@ -45,9 +45,7 @@ trait PreviewableFields
     /**
      * Determine if the field is to be shown in the preview modal.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
-     * @param  mixed  $resource
-     * @return bool
+     * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|object|array  $resource
      */
     public function isShownOnPreview(NovaRequest $request, $resource): bool
     {

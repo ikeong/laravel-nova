@@ -37,8 +37,7 @@
         <IndexSearchInput
           v-if="resourceInformation && resourceInformation.searchable"
           :searchable="resourceInformation && resourceInformation.searchable"
-          v-model:keyword="search"
-          @update:keyword="search = $event"
+          v-model="search"
         />
 
         <div
@@ -122,13 +121,13 @@
           :restore-all-matching-resources="restoreAllMatchingResources"
           :restore-selected-resources="restoreSelectedResources"
           :select-all-matching-checked="selectAllMatchingResources"
-          @deselect="clearResourceSelections"
+          @deselect="deselectAllResources"
           :selected-resources="selectedResources"
           :selected-resources-for-action-selector="
             selectedResourcesForActionSelector
           "
           :should-show-action-selector="shouldShowActionSelector"
-          :should-show-checkboxes="shouldShowCheckboxes"
+          :should-show-checkboxes="shouldShowSelectAllCheckboxes"
           :should-show-delete-menu="shouldShowDeleteMenu"
           :should-show-polling-toggle="shouldShowPollingToggle"
           :soft-deletes="softDeletes"
@@ -214,7 +213,6 @@
 </template>
 
 <script>
-// this.$refs.selectControl.selectedIndex = 0
 import { CancelToken, isCancel } from 'axios'
 import {
   HasCards,
@@ -351,7 +349,7 @@ export default {
             this.resourceResponse = data
             this.resources = data.resources
             this.softDeletes = data.softDeletes
-            this.perPage = data.per_page
+            this.perPage = data.perPage
             this.sortable = data.sortable
 
             this.handleResourcesLoaded()
@@ -457,6 +455,7 @@ export default {
         .then(response => {
           this.actions = response.data.actions
           this.pivotActions = response.data.pivotActions
+          this.resourceHasSoleActions = response.data.counts.sole > 0
           this.resourceHasActions = response.data.counts.resource > 0
         })
         .catch(e => {

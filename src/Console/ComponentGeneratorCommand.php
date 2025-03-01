@@ -3,11 +3,16 @@
 namespace Laravel\Nova\Console;
 
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Console\PromptsForMissingInput;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
 use Laravel\Nova\Console\Concerns\AcceptsNameAndVendor;
 use Symfony\Component\Process\Process;
 
-abstract class ComponentGeneratorCommand extends Command
+use function Illuminate\Filesystem\join_paths;
+use function Laravel\Prompts\confirm;
+
+abstract class ComponentGeneratorCommand extends Command implements PromptsForMissingInput
 {
     use AcceptsNameAndVendor, ResolvesStubPath;
 
@@ -16,12 +21,16 @@ abstract class ComponentGeneratorCommand extends Command
      *
      * @return void
      */
-    protected function prepareComposerReplacements()
+    protected function prepareComposerReplacements(Filesystem $files)
     {
-        $composerJson = $this->componentPath().'/composer.json';
+        $composerJson = join_paths($this->componentPath(), 'composer.json');
 
-        $this->replace('{{ name }}', $this->component(), $composerJson);
-        $this->replace('{{ escapedNamespace }}', $this->escapedComponentNamespace(), $composerJson);
+        $files->replaceInFile('{{ name }}', $this->component(), $composerJson);
+        $files->replaceInFile('{{ escapedNamespace }}', $this->escapedComponentNamespace(), $composerJson);
+
+        if ($files->isFile(base_path('auth.json')) && confirm('Copy `auth.json` from skeleton?', default: true)) {
+            $files->copy(base_path('auth.json'), join_paths($this->componentPath(), 'auth.json'));
+        }
     }
 
     /**
@@ -38,27 +47,29 @@ abstract class ComponentGeneratorCommand extends Command
             $this->addRepositoryToRootComposer();
             $this->addRequireToRootComposer();
 
-            if ($this->confirm('Would you like to update your Composer packages?', true)) {
+            if (confirm('Would you like to update your Composer packages?', true)) {
                 $this->composerUpdate();
 
                 $this->output->newLine();
             }
         }
 
-        if ($interactsWithNpm === true) {
+        if ($interactsWithComposer === true && $interactsWithNpm === true) {
             if (file_exists(base_path('package.json'))) {
                 $this->addScriptsToRootNpmPackage();
             } else {
-                $this->warn('Please create a package.json to the root of your project.');
+                $this->components->warn('Please create a package.json to the root of your project.');
             }
 
-            if ($this->confirm("Would you like to install the {$componentType}'s NPM dependencies?", true)) {
+            if (confirm("Would you like to install the {$componentType}'s NPM dependencies?", true)) {
+                $this->installNovaNpmDependencies();
+
                 $this->installNpmDependencies();
 
                 $this->output->newLine();
             }
 
-            if ($this->confirm("Would you like to compile the {$componentType}'s assets?", true)) {
+            if (confirm("Would you like to compile the {$componentType}'s assets?", true)) {
                 $this->compileAssets();
 
                 $this->output->newLine();
@@ -91,9 +102,9 @@ abstract class ComponentGeneratorCommand extends Command
      *
      * @return void
      */
-    protected function composerUpdate()
+    protected function composerUpdate(?string $directory = null)
     {
-        $this->executeCommand('composer update', getcwd());
+        $this->executeCommand('composer update', $directory ?? getcwd());
     }
 
     /**
@@ -168,7 +179,9 @@ abstract class ComponentGeneratorCommand extends Command
      */
     protected function installNovaNpmDependencies()
     {
-        $this->executeCommand('npm set progress=false && npm ci', realpath(__DIR__.'/../../'));
+        $this->composerUpdate($this->componentPath());
+
+        $this->executeCommand('npm install --save-dev "vendor/laravel/nova-devtool"', $this->componentPath());
     }
 
     /**
@@ -188,7 +201,10 @@ abstract class ComponentGeneratorCommand extends Command
      * @param  string|array  $replace
      * @param  string  $path
      * @return void
+     *
+     * @deprecated 5.2.0 Use `Illuminate\Filesystem\Filesystem::replaceInFile()` instead
      */
+    #[\Deprecated('Use `Illuminate\Filesystem\Filesystem::replaceInFile()` instead', since: '5.2.0')]
     protected function replace($search, $replace, $path)
     {
         file_put_contents($path, str_replace($search, $replace, file_get_contents($path)));
@@ -201,7 +217,7 @@ abstract class ComponentGeneratorCommand extends Command
      */
     protected function componentPath()
     {
-        return base_path('nova-components/'.$this->componentClass());
+        return base_path(join_paths('nova-components', $this->componentClass()));
     }
 
     /**
@@ -211,7 +227,7 @@ abstract class ComponentGeneratorCommand extends Command
      */
     protected function relativeComponentPath()
     {
-        return 'nova-components/'.$this->componentClass();
+        return implode('/', ['nova-components', $this->componentClass()]);
     }
 
     /**
@@ -272,5 +288,17 @@ abstract class ComponentGeneratorCommand extends Command
     protected function component()
     {
         return $this->argument('name');
+    }
+
+    /**
+     * Prompt for missing input arguments using the returned questions.
+     *
+     * @return array<string, string>
+     */
+    protected function promptForMissingArgumentsUsing(): array
+    {
+        return [
+            'name' => "What's the component name?",
+        ];
     }
 }

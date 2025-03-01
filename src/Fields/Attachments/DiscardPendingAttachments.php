@@ -15,15 +15,11 @@ class DiscardPendingAttachments
 
     /**
      * Discard pending attachments on the field.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return void
      */
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): void
     {
         static::$model::where('draft_id', $request->draftId)
-                    ->get()
-                    ->each
-                    ->purge();
+            ->get()
+            ->each->purge();
     }
 }

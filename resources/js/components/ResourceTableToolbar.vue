@@ -81,6 +81,7 @@
           v-if="shouldShowDeleteMenu"
           dusk="delete-menu"
           :soft-deletes="softDeletes"
+          :resource-name="resourceName"
           :resources="resources"
           :selected-resources="selectedResources"
           :via-many-to-many="viaManyToMany"
@@ -138,7 +139,9 @@
 import { Button } from 'laravel-nova-ui'
 
 export default {
-  components: { Button },
+  components: {
+    Button,
+  },
 
   emits: ['start-polling', 'stop-polling', 'deselect'],
 
@@ -195,6 +198,7 @@ export default {
     'updatePerPageChanged',
     'viaManyToMany',
     'viaResource',
+    'loading',
   ],
 
   computed: {
@@ -220,9 +224,7 @@ export default {
     },
 
     filterPerPageOptions() {
-      if (this.resourceInformation) {
-        return this.perPageOptions || this.resourceInformation.perPageOptions
-      }
+      return this.perPageOptions
     },
   },
 }

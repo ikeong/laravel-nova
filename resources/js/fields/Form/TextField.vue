@@ -15,6 +15,7 @@
           :id="currentField.uniqueKey"
           :dusk="field.attribute"
           :disabled="currentlyIsReadonly"
+          :autocomplete="currentField.autocomplete"
           :maxlength="field.enforceMaxlength ? field.maxlength : -1"
         />
 
@@ -50,26 +51,24 @@ export default {
     defaultAttributes() {
       return {
         type: this.currentField.type || 'text',
-        placeholder: this.currentField.placeholder || this.field.name,
         class: this.errorClasses,
         min: this.currentField.min,
         max: this.currentField.max,
         step: this.currentField.step,
         pattern: this.currentField.pattern,
+        placeholder: this.placeholder,
 
         ...this.suggestionsAttributes,
       }
     },
 
     extraAttributes() {
-      const attrs = this.currentField.extraAttributes
-
       return {
         // Leave the default attributes even though we can now specify
         // whatever attributes we like because the old number field still
         // uses the old field attributes
         ...this.defaultAttributes,
-        ...attrs,
+        ...this.currentField.extraAttributes,
       }
     },
   },

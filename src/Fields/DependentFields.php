@@ -7,34 +7,29 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Support\UndefinedValue;
 
 /**
+ * @internal
+ *
  * @property array $fieldDependencies
  */
 trait DependentFields
 {
     /**
      * Determine of should emit change event.
-     *
-     * @var bool
      */
-    protected $dependentShouldEmitChangesEvent = false;
+    protected ?bool $dependentShouldEmitChangesEvent;
 
     /**
      * Resolve the dependent component key.
-     *
-     * @return string
      */
-    public function dependentComponentKey()
+    public function dependentComponentKey(): string
     {
         return sprintf('%s.%s.%s', Str::slug(class_basename(get_called_class())), $this->component, $this->attribute);
     }
 
     /**
      * Resolve dependent field value.
-     *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
-     * @return mixed
      */
-    public function resolveDependentValue(NovaRequest $request)
+    public function resolveDependentValue(NovaRequest $request): mixed
     {
         return $this->value ?? $this->resolveDefaultValue($request);
     }
@@ -42,15 +37,12 @@ trait DependentFields
     /**
      * Sync depends on logic.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return $this
      */
     public function syncDependsOn(NovaRequest $request)
     {
-        $this->value = new UndefinedValue();
-        $this->defaultCallback = function () {
-            return new UndefinedValue();
-        };
+        $this->value = new UndefinedValue;
+        $this->defaultCallback = static fn () => new UndefinedValue;
 
         $this->applyDependsOn($request);
 
@@ -64,7 +56,7 @@ trait DependentFields
             return $value;
         });
 
-        $this->dependentShouldEmitChangesEvent = ! $value instanceof UndefinedValue;
+        $this->dependentShouldEmitChangesEvent ??= ! $value instanceof UndefinedValue;
 
         if ($value instanceof UndefinedValue) {
             $this->value = null;
@@ -78,15 +70,13 @@ trait DependentFields
     /**
      * Apply depends on logic.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return $this
      */
     public function applyDependsOn(NovaRequest $request)
     {
         $this->fieldDependencies = collect($this->fieldDependencies ?? [])
-            ->map(function (Dependent $dependent) use ($request) {
-                return $dependent->handle($this, $request);
-            })->all();
+            ->map(fn (Dependent $dependent) => $dependent->handle($this, $request))
+            ->all();
 
         return $this;
     }
@@ -94,15 +84,14 @@ trait DependentFields
     /**
      * Get depends on attributes.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return array<string, mixed>|null
      */
-    protected function getDependentsAttributes(NovaRequest $request)
+    protected function getDependentsAttributes(NovaRequest $request): ?array
     {
         /** @var \Illuminate\Support\Collection<string, mixed> $attributes */
-        $attributes = collect($this->fieldDependencies ?? [])->map(function (Dependent $dependent) {
-            return $dependent->getAttributes();
-        })->collapse();
+        $attributes = collect($this->fieldDependencies ?? [])
+            ->map(static fn (Dependent $dependent) => $dependent->getAttributes())
+            ->collapse();
 
         if ($attributes->isNotEmpty()) {
             return $attributes->all();
@@ -114,7 +103,6 @@ trait DependentFields
     /**
      * Serialize dependent field.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return array<string, mixed>
      */
     protected function serializeDependentField(NovaRequest $request): array
@@ -122,7 +110,7 @@ trait DependentFields
         return [
             'dependentComponentKey' => $this->dependentComponentKey(),
             'dependsOn' => $this->getDependentsAttributes($request),
-            'dependentShouldEmitChangesEvent' => $this->dependentShouldEmitChangesEvent,
+            'dependentShouldEmitChangesEvent' => $this->dependentShouldEmitChangesEvent ?? false,
         ];
     }
 }

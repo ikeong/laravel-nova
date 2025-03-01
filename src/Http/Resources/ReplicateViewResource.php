@@ -3,46 +3,32 @@
 namespace Laravel\Nova\Http\Resources;
 
 use Laravel\Nova\Http\Requests\ResourceCreateOrAttachRequest;
+use Laravel\Nova\Resource as NovaResource;
 
 class ReplicateViewResource extends CreateViewResource
 {
     /**
-     * From Resource ID.
-     *
-     * @var string|int|null
-     */
-    protected $fromResourceId;
-
-    /**
      * Construct a new Create View Resource.
      *
-     * @param  string|int|null  $fromResourceId
      * @return void
      */
-    public function __construct($fromResourceId = null)
+    public function __construct(protected string|int|null $fromResourceId = null)
     {
-        $this->fromResourceId = $fromResourceId;
+        //
     }
 
-    /**
-     * Get current resource for the request.
-     *
-     * @param  \Laravel\Nova\Http\Requests\ResourceCreateOrAttachRequest  $request
-     * @return \Laravel\Nova\Resource
-     *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function newResourceWith(ResourceCreateOrAttachRequest $request)
+    /** {@inheritDoc} */
+    #[\Override]
+    public function newResourceWith(ResourceCreateOrAttachRequest $request): NovaResource
     {
         $query = $request->findModelQuery($this->fromResourceId);
 
-        $resource = $request->resource();
-        $resource::replicateQuery($request, $query);
+        $resourceClass = $request->resource();
 
-        $resource = $request->newResourceWith($query->firstOrFail());
+        $resourceClass::replicateQuery($request, $query);
 
-        $resource->authorizeToReplicate($request);
-
-        return $resource->replicate();
+        return tap($request->newResourceWith($query->firstOrFail()), static function (NovaResource $resource) use ($request) {
+            $resource->authorizeToReplicate($request);
+        })->replicate();
     }
 }

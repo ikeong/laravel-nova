@@ -4,104 +4,88 @@ namespace Laravel\Nova\Actions;
 
 use ArrayAccess;
 use JsonSerializable;
+use Laravel\Nova\URL;
+use Stringable;
 
 class ActionResponse implements ArrayAccess, JsonSerializable
 {
-    /**
-     * @var string
-     */
-    private $danger;
+    private ?Responses\Message $message = null;
+
+    private ?Responses\Message $danger = null;
+
+    private ?Responses\DownloadFile $download = null;
+
+    private ?Responses\Redirect $redirect = null;
+
+    private ?Responses\Visit $visit = null;
+
+    private ?Responses\Modal $modal = null;
+
+    private ?bool $deleted = null;
 
     /**
-     * @var bool
+     * Create a new response using `message`.
+     *
+     * @return static
      */
-    private $deleted;
-
-    /**
-     * @var string
-     */
-    private $download;
-
-    /**
-     * @var string
-     */
-    private $message;
-
-    /**
-     * @var string
-     */
-    private $name;
-
-    /**
-     * @var string
-     */
-    private $openInNewTab;
-
-    /**
-     * @var string
-     */
-    private $redirect;
-
-    /**
-     * @var array{path: string, options: array<string, mixed>}|null
-     */
-    private $visit;
-
-    /**
-     * @var string
-     */
-    private $modal;
-
-    /**
-     * @var array
-     */
-    private $data = [];
-
-    /**
-     * @param  string  $message
-     * @return \Laravel\Nova\Actions\ActionResponse
-     */
-    public static function message($message)
+    public static function message(Stringable|string $message)
     {
-        return tap(new static, function (self $response) use ($message) {
+        return tap(new static, static function ($response) use ($message) {
             $response->withMessage($message);
         });
     }
 
     /**
-     * @param  string  $message
+     * Includes `message` to the current response.
+     *
      * @return $this
      */
-    public function withMessage($message)
+    public function withMessage(Stringable|string $message)
     {
-        $this->message = $message;
+        $this->message = new Responses\Message($message);
 
         return $this;
     }
 
     /**
-     * @param  string  $message
-     * @return $this
+     * Create a new response using `danger`.
+     *
+     * @return static
      */
-    public function withDangerMessage($message)
+    public static function danger(Stringable|string $message)
     {
-        $this->danger = $message;
-
-        return $this;
-    }
-
-    /**
-     * @param  string  $message
-     * @return \Laravel\Nova\Actions\ActionResponse
-     */
-    public static function danger(string $message)
-    {
-        return tap(new static, function (self $response) use ($message) {
+        return tap(new static, static function ($response) use ($message) {
             $response->withDangerMessage($message);
         });
     }
 
     /**
+     * Includes `danger` to the current response.
+     *
+     * @return $this
+     */
+    public function withDangerMessage(Stringable|string $message)
+    {
+        $this->danger = new Responses\Message($message);
+
+        return $this;
+    }
+
+    /**
+     * Create a new response using `deleted`.
+     *
+     * @return static
+     */
+    public static function deleted()
+    {
+        return tap(new static, static function ($response) {
+            $response->withDeleted();
+        });
+    }
+
+    /**
+     * Includes `deleted` to the current response.
+     *
      * @return $this
      */
     public function withDeleted()
@@ -112,141 +96,131 @@ class ActionResponse implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * @return \Laravel\Nova\Actions\ActionResponse
+     * Create a new response using `redirect`.
+     *
+     * @return static
      */
-    public static function deleted()
+    public static function redirect(string $url, bool $openInNewTab = false)
     {
-        return tap(new static, function (self $response) {
-            $response->withDeleted();
+        return tap(new static, static function ($response) use ($url, $openInNewTab) {
+            $response->withRedirect($url, $openInNewTab);
         });
     }
 
     /**
-     * @param  string  $url
+     * Create a new response using `openInNewTab`.
+     *
+     * @return static
+     */
+    public static function openInNewTab(string $url)
+    {
+        return static::redirect($url, openInNewTab: true);
+    }
+
+    /**
+     * Includes `redirect` to the current response.
+     *
      * @return $this
      */
-    public function withRedirect($url)
+    public function withRedirect(string $url, bool $openInNewTab = false)
     {
-        $this->redirect = $url;
+        $this->redirect = new Responses\Redirect($url, $openInNewTab);
 
         return $this;
     }
 
     /**
-     * @param  string  $url
-     * @return \Laravel\Nova\Actions\ActionResponse
-     */
-    public static function redirect($url)
-    {
-        return tap(new static, function (self $response) use ($url) {
-            $response->withRedirect($url);
-        });
-    }
-
-    /**
-     * @param  string  $url
-     * @return \Laravel\Nova\Actions\ActionResponse
-     */
-    public static function openInNewTab($url)
-    {
-        return tap(new static, function (self $response) use ($url) {
-            $response->usingNewTab($url);
-        });
-    }
-
-    /**
-     * @param  string|\Laravel\Nova\URL  $path
-     * @param  array<string, mixed>  $options
+     * Indicate redirect to be loaded using a new tab.
+     *
      * @return $this
      */
-    public function withVisitOptions($path, $options = [])
+    public function usingNewTab()
     {
-        $this->visit = [
-            'path' => '/'.ltrim($path, '/'),
-            'options' => $options,
-        ];
+        if (! is_null($this->redirect)) {
+            $this->redirect->usingNewTab();
+        }
 
         return $this;
     }
 
     /**
-     * @param  string|\Laravel\Nova\URL  $path
+     * Create a new response using `visit`.
+     *
      * @param  array<string, mixed>  $options
-     * @return \Laravel\Nova\Actions\ActionResponse
+     * @return static
      */
-    public static function visit($path, $options = [])
+    public static function visit(URL|string $path, array $options = [])
     {
-        return tap(new static, function (self $response) use ($path, $options) {
+        return tap(new static, static function ($response) use ($path, $options) {
             $response->withVisitOptions($path, $options);
         });
     }
 
     /**
-     * @param  string  $url
+     * Includes `visit` to the current response.
+     *
+     * @param  array<string, mixed>  $options
      * @return $this
      */
-    private function usingNewTab($url)
+    public function withVisitOptions(URL|string $path, array $options = [])
     {
-        $this->openInNewTab = $url;
+        $this->visit = new Responses\Visit($path, $options);
 
         return $this;
     }
 
     /**
-     * @param  string  $name
-     * @param  string  $url
-     * @return $this
+     * Create a new response using `download`.
+     *
+     * @return static
      */
-    public function withDownload($name, $url)
+    public static function download(Stringable|string $name, string $url)
     {
-        $this->name = $name;
-        $this->download = $url;
-
-        return $this;
-    }
-
-    /**
-     * @param  string  $name
-     * @param  string  $url
-     * @return \Laravel\Nova\Actions\ActionResponse
-     */
-    public static function download(string $name, string $url)
-    {
-        return tap(new static, function (self $response) use ($name, $url) {
+        return tap(new static, static function ($response) use ($name, $url) {
             $response->withDownload($name, $url);
         });
     }
 
     /**
-     * @param  string  $modal
-     * @param  array  $data
+     * Includes `download` to the current response.
+     *
      * @return $this
      */
-    public function withModal($modal, $data = [])
+    public function withDownload(Stringable|string $name, string $url)
     {
-        $this->modal = $modal;
-        $this->data = $data;
+        $this->download = new Responses\DownloadFile($url, $name);
 
         return $this;
     }
 
     /**
-     * @param  string  $modal
-     * @param  array  $data
-     * @return \Laravel\Nova\Actions\ActionResponse
+     * Create a new response using `modal`.
+     *
+     * @return static
      */
-    public static function modal(string $modal, $data)
+    public static function modal(string $modal, array $data)
     {
-        return tap(new static, function (self $response) use ($data, $modal) {
+        return tap(new static, static function ($response) use ($data, $modal) {
             $response->withModal($modal, $data);
         });
+    }
+
+    /**
+     * Includes `modal` to the current response.
+     *
+     * @return $this
+     */
+    public function withModal(string $modal, array $data = [])
+    {
+        $this->modal = new Responses\Modal(component: $modal, payload: $data);
+
+        return $this;
     }
 
     /**
      * Determine if the given offset exists.
      *
      * @param  string  $offset
-     * @return bool
      */
     public function offsetExists($offset): bool
     {
@@ -268,8 +242,6 @@ class ActionResponse implements ArrayAccess, JsonSerializable
      * Set the value at the given offset.
      *
      * @param  string  $offset
-     * @param  mixed  $value
-     * @return void
      */
     public function offsetSet($offset, $value): void
     {
@@ -282,7 +254,6 @@ class ActionResponse implements ArrayAccess, JsonSerializable
      * Unset the value at the given offset.
      *
      * @param  string  $offset
-     * @return void
      */
     public function offsetUnset($offset): void
     {
@@ -296,16 +267,14 @@ class ActionResponse implements ArrayAccess, JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        return array_filter(array_merge([
+        return array_filter([
             'danger' => $this->danger,
             'deleted' => $this->deleted,
             'download' => $this->download,
             'modal' => $this->modal,
             'message' => $this->message,
-            'name' => $this->name,
-            'openInNewTab' => $this->openInNewTab,
             'redirect' => $this->redirect,
             'visit' => $this->visit,
-        ], $this->data));
+        ]);
     }
 }

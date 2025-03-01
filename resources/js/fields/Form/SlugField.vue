@@ -10,18 +10,25 @@
         <input
           v-bind="extraAttributes"
           ref="theInput"
-          class="w-full form-control form-input form-control-bordered"
+          :value="value"
+          @blur="handleChangesOnBlurEvent"
+          @keyup.enter="handleChangeOnPressingEnterEvent"
+          @keydown.enter="handleChangeOnPressingEnterEvent"
           :id="field.uniqueKey"
+          :disabled="isImmutable"
+          :readonly="isImmutable"
+          class="w-full form-control form-input form-control-bordered"
           :dusk="field.attribute"
-          v-model="value"
-          :disabled="isReadonly"
+          autocomplete="off"
+          spellcheck="false"
         />
 
         <button
-          class="rounded inline-flex text-sm ml-3 link-default"
           v-if="field.showCustomizeButton"
           type="button"
           @click="toggleCustomizeClick"
+          :dusk="`${field.attribute}-slug-field-edit-button`"
+          class="rounded inline-flex text-sm ml-3 link-default"
         >
           {{ __('Customize') }}
         </button>
@@ -31,21 +38,27 @@
 </template>
 
 <script>
-import { FormField, HandlesValidationErrors } from '@/mixins'
+import {
+  FormField,
+  HandlesFieldPreviews,
+  HandlesValidationErrors,
+} from '@/mixins'
 import debounce from 'lodash/debounce'
+import get from 'lodash/get'
+import isNil from 'lodash/isNil'
 
 export default {
-  mixins: [HandlesValidationErrors, FormField],
+  mixins: [FormField, HandlesFieldPreviews, HandlesValidationErrors],
 
   data: () => ({
     isListeningToChanges: false,
+    isCustomisingValue: false,
     debouncedHandleChange: null,
   }),
 
   mounted() {
-    if (this.shouldRegisterInitialListener) {
-      this.registerChangeListener()
-    }
+    this.debouncedHandleChange = debounce(this.handleChange, 250)
+    this.registerChangeListener()
   },
 
   beforeUnmount() {
@@ -53,21 +66,12 @@ export default {
   },
 
   methods: {
-    async fetchPreviewContent(value) {
-      const {
-        data: { preview },
-      } = await Nova.request().post(
-        `/nova-api/${this.resourceName}/field/${this.fieldAttribute}/preview`,
-        { value }
-      )
-
-      return preview
-    },
-
     registerChangeListener() {
-      Nova.$on(this.eventName, debounce(this.handleChange, 250))
+      if (this.shouldRegisterInitialListener === true) {
+        Nova.$on(this.eventName, this.debouncedHandleChange)
 
-      this.isListeningToChanges = true
+        this.isListeningToChanges = true
+      }
     },
 
     removeChangeListener() {
@@ -76,40 +80,85 @@ export default {
       }
     },
 
+    handleChangeOnPressingEnterEvent(event) {
+      event.preventDefault()
+      event.stopPropagation()
+
+      this.listenToValueChanges(event?.target?.value ?? event)
+    },
+
+    handleChangesOnBlurEvent(event) {
+      this.listenToValueChanges(event?.target?.value ?? event)
+    },
+
+    listenToValueChanges(value) {
+      if (this.isImmutable === true) {
+        return
+      }
+
+      if (this.isCustomisingValue === true) {
+        this.value = value
+        return
+      }
+
+      if (isNil(this.field.from)) {
+        this.debouncedHandleChange(value)
+      }
+    },
+
     async handleChange(value) {
       this.value = await this.fetchPreviewContent(value)
     },
 
     toggleCustomizeClick() {
-      if (this.field.readonly) {
+      if (this.field.extraAttributes.readonly === true) {
+        this.isCustomisingValue = true
         this.removeChangeListener()
         this.isListeningToChanges = false
-        this.field.readonly = false
+        this.field.writable = true
         this.field.extraAttributes.readonly = false
         this.field.showCustomizeButton = false
         this.$refs.theInput.focus()
         return
       }
 
+      this.isCustomisingValue = false
       this.registerChangeListener()
-      this.field.readonly = true
+      this.field.writable = false
       this.field.extraAttributes.readonly = true
     },
   },
 
   computed: {
     shouldRegisterInitialListener() {
-      return !this.field.updating
+      return this.field.shouldListenToFromChanges
+    },
+
+    isImmutable() {
+      return Boolean(
+        this.field.readonly === false &&
+          this.field.writable === true &&
+          get(this.field, 'extraAttributes.readonly') === true
+      )
     },
 
     eventName() {
       return this.getFieldAttributeChangeEventName(this.field.from)
     },
 
+    placeholder() {
+      if (isNil(this.field.from)) {
+        return this.field.placeholder ?? this.field.name
+      }
+
+      return this.field.placeholder ?? null
+    },
+
     extraAttributes() {
       return {
-        ...this.field.extraAttributes,
         class: this.errorClasses,
+        placeholder: this.placeholder,
+        ...this.field.extraAttributes,
       }
     },
   },

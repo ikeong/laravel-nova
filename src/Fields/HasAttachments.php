@@ -4,7 +4,7 @@ namespace Laravel\Nova\Fields;
 
 use Illuminate\Support\Str;
 use Laravel\Nova\Fields\Attachments\DeleteAttachments;
-use Laravel\Nova\Fields\Attachments\DetachAttachment;
+use Laravel\Nova\Fields\Attachments\DetachAnyAttachment;
 use Laravel\Nova\Fields\Attachments\DiscardPendingAttachments;
 use Laravel\Nova\Fields\Attachments\PendingAttachment;
 use Laravel\Nova\Fields\Attachments\StorePendingAttachment;
@@ -25,28 +25,28 @@ trait HasAttachments
     /**
      * The callback that should be executed to store file attachments.
      *
-     * @var callable(\Illuminate\Http\Request):string
+     * @var callable(\Laravel\Nova\Http\Requests\NovaRequest):array{path: string, url: string}
      */
     public $attachCallback;
 
     /**
      * The callback that should be executed to delete persisted file attachments.
      *
-     * @var callable(\Illuminate\Http\Request):void
+     * @var (callable(\Laravel\Nova\Http\Requests\NovaRequest):void)|\Laravel\Nova\Fields\Attachments\DetachAnyAttachment
      */
     public $detachCallback;
 
     /**
      * The callback that should be executed to discard file attachments.
      *
-     * @var callable(\Illuminate\Http\Request):void
+     * @var callable(\Laravel\Nova\Http\Requests\NovaRequest):void
      */
     public $discardCallback;
 
     /**
      * Specify the callback that should be used to store file attachments.
      *
-     * @param  callable(\Illuminate\Http\Request):string  $callback
+     * @param  callable(\Laravel\Nova\Http\Requests\NovaRequest):array{path: string, url: string}  $callback
      * @return $this
      */
     public function attach(callable $callback)
@@ -61,7 +61,7 @@ trait HasAttachments
     /**
      * Specify the callback that should be used to delete a single, persisted file attachment.
      *
-     * @param  callable(\Illuminate\Http\Request):void  $callback
+     * @param  callable(\Laravel\Nova\Http\Requests\NovaRequest):void  $callback
      * @return $this
      */
     public function detach(callable $callback)
@@ -76,7 +76,6 @@ trait HasAttachments
     /**
      * Specify the callback that should be used to discard pending file attachments.
      *
-     * @param  callable  $callback
      * @return $this
      */
     public function discard(callable $callback)
@@ -106,21 +105,19 @@ trait HasAttachments
     /**
      * Specify that file uploads should be allowed.
      *
-     * @param  string  $disk
-     * @param  string  $path
      * @return $this
      */
-    public function withFiles($disk = null, $path = '/')
+    public function withFiles(?string $disk = null, string $path = '/')
     {
         $this->withFiles = true;
 
         $this->disk($disk)->path($path);
 
         $this->attach(new StorePendingAttachment($this))
-             ->detach(new DetachAttachment())
-             ->delete(new DeleteAttachments($this))
-             ->discard(new DiscardPendingAttachments())
-             ->prunable();
+            ->detach(new DetachAnyAttachment)
+            ->delete(new DeleteAttachments($this))
+            ->discard(new DiscardPendingAttachments)
+            ->prunable();
 
         return $this;
     }
@@ -128,19 +125,17 @@ trait HasAttachments
     /**
      * Hydrate the given attribute on the model based on the incoming request.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
-     * @param  string  $requestAttribute
      * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent  $model
-     * @param  string  $attribute
-     * @return void|\Closure
      */
-    protected function fillAttributeWithAttachment(NovaRequest $request, $requestAttribute, $model, $attribute)
+    protected function fillAttributeWithAttachment(NovaRequest $request, string $requestAttribute, object $model, string $attribute): ?callable
     {
         $callbacks = [];
 
         $maybeCallback = parent::fillAttribute($request, $requestAttribute, $model, $attribute);
 
-        $attribute = Str::replace('.', '->', "{$this->attribute}DraftId");
+        $attribute = Str::contains($requestAttribute, '.') && $this->attribute !== $requestAttribute
+            ? "{$requestAttribute}DraftId"
+            : Str::replace('.', '->', "{$this->attribute}DraftId");
 
         if (is_callable($maybeCallback)) {
             $callbacks[] = $maybeCallback;
@@ -157,9 +152,11 @@ trait HasAttachments
         }
 
         if (count($callbacks)) {
-            return function () use ($callbacks) {
+            return static function () use ($callbacks) {
                 collect($callbacks)->each->__invoke();
             };
         }
+
+        return null;
     }
 }

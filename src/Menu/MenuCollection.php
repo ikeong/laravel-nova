@@ -17,14 +17,14 @@ class MenuCollection extends Collection
     /**
      * Filter menus should be displayed for the given request.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return static<int, TValue>
      */
     public function authorized(Request $request)
     {
-        return $this->reject(function ($menu) use ($request) {
-            return method_exists($menu, 'authorizedToSee') && ! $menu->authorizedToSee($request);
-        })->values();
+        /** @phpstan-ignore return.type */
+        return $this->reject(
+            static fn ($menu) => method_exists($menu, 'authorizedToSee') && ! $menu->authorizedToSee($request)
+        )->values();
     }
 
     /**
@@ -34,7 +34,8 @@ class MenuCollection extends Collection
      */
     public function withoutEmptyItems()
     {
-        return $this->transform(function ($menu) {
+        /** @phpstan-ignore return.type */
+        return $this->transform(static function ($menu) {
             if ($menu instanceof JsonSerializable) {
                 $payload = $menu->jsonSerialize();
 

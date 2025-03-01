@@ -25,7 +25,6 @@ class StorePendingAttachment
     /**
      * Create a new invokable instance.
      *
-     * @param  \Laravel\Nova\Contracts\Storable  $field
      * @return void
      *
      * @phpstan-param \Laravel\Nova\Fields\Field&\Laravel\Nova\Contracts\Storable $field
@@ -38,10 +37,9 @@ class StorePendingAttachment
     /**
      * Attach a pending attachment to the field.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return string
+     * @return array{path: string, url: string}
      */
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): array
     {
         $request->validate([
             'attachment' => ['required', 'file'],
@@ -49,10 +47,15 @@ class StorePendingAttachment
 
         $disk = $this->field->getStorageDisk() ?? $this->field->getDefaultStorageDisk();
 
-        return Storage::disk($disk)->url(static::$model::create([
+        static::$model::create([
             'draft_id' => $request->draftId,
-            'attachment' => $request->file('attachment')->store($this->field->getStorageDir(), $disk),
+            'attachment' => $path = $request->file('attachment')->store($this->field->getStorageDir(), $disk),
             'disk' => $disk,
-        ])->attachment);
+        ]);
+
+        return [
+            'path' => $path,
+            'url' => Storage::disk($disk)->url($path),
+        ];
     }
 }

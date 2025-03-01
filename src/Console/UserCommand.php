@@ -5,16 +5,18 @@ namespace Laravel\Nova\Console;
 use Illuminate\Console\Command;
 use Laravel\Nova\Nova;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'nova:user')]
 class UserCommand extends Command
 {
     /**
-     * The name and signature of the console command.
+     * The console command name.
      *
      * @var string
      */
-    protected $signature = 'nova:user';
+    protected $name = 'nova:user';
 
     /**
      * The console command description.
@@ -22,6 +24,15 @@ class UserCommand extends Command
      * @var string
      */
     protected $description = 'Create a new user';
+
+    /** {@inheritDoc} */
+    #[\Override]
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        parent::initialize($input, $output);
+
+        (new Bootstrap\ConfiguresPrompts)->bootstrap($this->laravel);
+    }
 
     /**
      * Execute the console command.
@@ -32,6 +43,6 @@ class UserCommand extends Command
     {
         Nova::createUser($this);
 
-        $this->info('User created successfully.');
+        $this->components->info('User created successfully.');
     }
 }

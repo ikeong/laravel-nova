@@ -1,14 +1,13 @@
 <template>
   <SelectControl
+    v-if="actionSelectionOptions.length > 0"
     v-bind="$attrs"
-    v-if="actionsForSelect.length > 0"
     ref="actionSelectControl"
+    v-model="actionSelectionInput"
+    :options="actionSelectionOptions"
     size="xs"
-    @change="handleSelectionChange"
-    :options="actionsForSelect"
-    dusk="action-select"
-    selected=""
     :class="{ 'max-w-[6rem]': width === 'auto', 'w-full': width === 'full' }"
+    dusk="action-select"
     :aria-label="__('Select Action')"
   >
     <option value="" disabled selected>{{ __('Actions') }}</option>
@@ -32,22 +31,17 @@
   <component
     v-if="responseModalVisible"
     :show="responseModalVisible"
-    :is="actionResponseData?.modal"
+    :is="actionModalReponseData?.component"
     @confirm="closeResponseModal"
     @close="closeResponseModal"
-    :data="actionResponseData"
+    :data="actionModalReponseData?.payload ?? {}"
   />
 </template>
 
 <script setup>
 import { useActions } from '@/composables/useActions'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useStore } from 'vuex'
-import { computed, ref } from 'vue'
-
-// Elements
-const actionSelectControl = ref(null)
-
-const store = useStore()
 
 const emitter = defineEmits(['actionExecuted'])
 
@@ -70,6 +64,10 @@ const props = defineProps({
   triggerDuskAttribute: { type: String, default: null },
 })
 
+const actionSelectionInput = ref('')
+
+const store = useStore()
+
 const {
   errors,
   actionModalVisible,
@@ -85,17 +83,21 @@ const {
   executeAction,
   availableActions,
   availablePivotActions,
-  actionResponseData,
+  actionModalReponseData,
 } = useActions(props, emitter, store)
 
-const handleSelectionChange = event => {
-  setSelectedActionKey(event)
+watch(actionSelectionInput, value => {
+  if (value == '') {
+    return
+  }
+
+  setSelectedActionKey(value)
   determineActionStrategy()
 
-  actionSelectControl.value.resetSelection()
-}
+  nextTick(() => (actionSelectionInput.value = ''))
+})
 
-const actionsForSelect = computed(() => [
+const actionSelectionOptions = computed(() => [
   ...availableActions.value.map(a => ({
     value: a.uriKey,
     label: a.name,

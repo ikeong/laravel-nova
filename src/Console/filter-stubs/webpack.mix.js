@@ -1,6 +1,7 @@
 let mix = require('laravel-mix')
+let NovaExtension = require('laravel-nova-devtool')
 
-require('./nova.mix')
+mix.extend('nova', new NovaExtension())
 
 mix
   .setPublicPath('dist')
@@ -8,3 +9,4 @@ mix
   .vue({ version: 3 })
   .css('resources/css/filter.css', 'css')
   .nova('{{ name }}')
+  .version()

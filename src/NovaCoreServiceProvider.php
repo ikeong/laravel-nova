@@ -6,14 +6,18 @@ use Illuminate\Auth\Events\Attempting;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Laravel\Nova\Auth\Adapters\SessionImpersonator;
 use Laravel\Nova\Contracts\ImpersonatesUsers;
 use Laravel\Nova\Contracts\QueryBuilder;
 use Laravel\Nova\Events\ServingNova;
+use Laravel\Nova\Http\Middleware\Authenticate;
+use Laravel\Nova\Http\Middleware\RedirectIfAuthenticated;
 use Laravel\Nova\Http\Middleware\ServeNova;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Listeners\BootNova;
@@ -30,10 +34,8 @@ class NovaCoreServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap any package services.
-     *
-     * @return void
      */
-    public function boot()
+    public function boot(): void
     {
         Nova::booted(BootNova::class);
 
@@ -45,13 +47,15 @@ class NovaCoreServiceProvider extends ServiceProvider
             $this->mergeConfigFrom(__DIR__.'/../config/nova.php', 'nova');
         }
 
+        Route::aliasMiddleware('nova.guest', RedirectIfAuthenticated::class);
+        Route::aliasMiddleware('nova.auth', Authenticate::class);
         Route::middlewareGroup('nova', config('nova.middleware', []));
         Route::middlewareGroup('nova:api', config('nova.api_middleware', []));
 
         $this->app->make(HttpKernel::class)
-                    ->pushMiddleware(ServeNova::class);
+            ->pushMiddleware(ServeNova::class);
 
-        $this->app->afterResolving(NovaRequest::class, function ($request, $app) {
+        $this->app->afterResolving(NovaRequest::class, static function ($request, $app) {
             if (! $app->bound(NovaRequest::class)) {
                 $app->instance(NovaRequest::class, $request);
             }
@@ -64,10 +68,8 @@ class NovaCoreServiceProvider extends ServiceProvider
 
     /**
      * Register any application services.
-     *
-     * @return void
      */
-    public function register()
+    public function register(): void
     {
         if (! defined('NOVA_PATH')) {
             define('NOVA_PATH', realpath(__DIR__.'/../'));
@@ -75,30 +77,63 @@ class NovaCoreServiceProvider extends ServiceProvider
 
         $this->app->singleton(ImpersonatesUsers::class, SessionImpersonator::class);
 
-        $this->app->bind(QueryBuilder::class, function ($app, $parameters) {
-            return new Builder(...$parameters);
+        $this->app->bind(QueryBuilder::class, static fn ($app, $parameters) => new Builder(...$parameters));
+
+        $this->registerAboutCommand();
+    }
+
+    /**
+     * Register the package about command.
+     */
+    protected function registerAboutCommand(): void
+    {
+        AboutCommand::add('Nova', static function () {
+            $formatEnabledStatus = static fn ($value) => $value ? '<fg=yellow;options=bold>ENABLED</>' : 'OFF';
+
+            return [
+                'Version' => fn () => Nova::version(),
+                'Name' => fn () => config('nova.name'),
+                'URL' => fn () => Str::of((config('nova.domain') ?? config('app.url')).Nova::path())->replace(['http://', 'https://'], ''),
+
+                'Theme Switcher' => AboutCommand::format(Nova::$withThemeSwitcher, console: $formatEnabledStatus),
+                'RTL Enabled' => AboutCommand::format(Nova::rtlEnabled(), console: $formatEnabledStatus),
+                'Pagination' => static fn () => config('nova.pagination'),
+                'Storage Disk' => static fn () => config('nova.storage_disk'),
+                'Currency' => static fn () => config('nova.currency'),
+
+                'Notification Center' => AboutCommand::format(Nova::$withNotificationCenter, console: $formatEnabledStatus),
+                'Notification Polling' => AboutCommand::format(Nova::$notificationPollingInterval, console: static fn ($value) => "{$value}s"),
+
+                'Authentication' => AboutCommand::format(Nova::routes()->withAuthentication, console: $formatEnabledStatus),
+                'Authentication Guard' => AboutCommand::format(config('nova.guard'), console: static fn ($value) => $value ?? 'null'),
+
+                'Password Reset' => AboutCommand::format(Nova::routes()->withPasswordReset, console: $formatEnabledStatus),
+                'Password Reset Broker' => AboutCommand::format(config('nova.passwords'), console: static fn ($value) => $value ?? 'null'),
+
+                'Global Search' => AboutCommand::format(Nova::$withGlobalSearch, console: $formatEnabledStatus),
+                'Global Debounce' => AboutCOmmand::format(Nova::$debounce, console: static fn ($value) => "{$value}s"),
+            ];
         });
     }
 
     /**
      * Register the package events.
-     *
-     * @return void
      */
-    protected function registerEvents()
+    protected function registerEvents(): void
     {
-        tap($this->app['events'], function ($event) {
-            $event->listen(Attempting::class, function () {
+        tap($this->app['events'], static function ($event) {
+            $event->listen(Attempting::class, static function () {
                 app(ImpersonatesUsers::class)->flushImpersonationData(request());
             });
 
-            $event->listen(Logout::class, function () {
+            $event->listen(Logout::class, static function () {
                 app(ImpersonatesUsers::class)->flushImpersonationData(request());
             });
 
-            $event->listen(RequestReceived::class, function ($event) {
+            /** @phpstan-ignore class.notFound */
+            $event->listen(RequestReceived::class, static function ($event) {
                 Nova::flushState();
-                /** @phpstan-ignore-next-line */
+                /** @phpstan-ignore class.notFound */
                 if (class_exists(Cache::class)) {
                     Cache::getInstance()->flush();
                 }
@@ -106,7 +141,7 @@ class NovaCoreServiceProvider extends ServiceProvider
                 $event->sandbox->forgetInstance(ImpersonatesUsers::class);
             });
 
-            $event->listen(RequestHandled::class, function ($event) {
+            $event->listen(RequestHandled::class, static function ($event) {
                 Container::getInstance()->forgetInstance(NovaRequest::class);
             });
         });
@@ -114,10 +149,8 @@ class NovaCoreServiceProvider extends ServiceProvider
 
     /**
      * Register the package resources such as routes, templates, etc.
-     *
-     * @return void
      */
-    protected function registerResources()
+    protected function registerResources(): void
     {
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'nova');
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'nova');
@@ -131,10 +164,8 @@ class NovaCoreServiceProvider extends ServiceProvider
 
     /**
      * Register the package routes.
-     *
-     * @return void
      */
-    protected function registerRoutes()
+    protected function registerRoutes(): void
     {
         Route::group($this->routeConfiguration(), function () {
             $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
@@ -146,7 +177,7 @@ class NovaCoreServiceProvider extends ServiceProvider
      *
      * @return array{domain: string|null, as: string, prefix: string, middleware: string}
      */
-    protected function routeConfiguration()
+    protected function routeConfiguration(): array
     {
         return [
             'domain' => config('nova.domain', null),
@@ -159,26 +190,20 @@ class NovaCoreServiceProvider extends ServiceProvider
 
     /**
      * Register the Nova JSON variables.
-     *
-     * @return void
      */
-    protected function registerJsonVariables()
+    protected function registerJsonVariables(): void
     {
-        Nova::serving(function (ServingNova $event) {
+        Nova::serving(static function (ServingNova $event) {
             // Load the default Nova translations.
             Nova::translations(
-                lang_path('vendor/nova/'.app()->getLocale().'.json')
+                lang_path("vendor/nova/{$event->app->getLocale()}.json")
             );
 
             Nova::provideToScript([
-                'appName' => Nova::name() ?? config('app.name', 'Laravel Nova'),
+                'appName' => Nova::name() ?? config('app.name', 'Laravel Nova'), /** @phpstan-ignore nullCoalesce.expr */
                 'timezone' => config('app.timezone', 'UTC'),
-                'translations' => function () {
-                    return Nova::allTranslations();
-                },
-                'userTimezone' => function ($request) {
-                    return Nova::resolveUserTimezone($request);
-                },
+                'translations' => static fn () => Nova::allTranslations(),
+                'userTimezone' => static fn ($request) => Nova::resolveUserTimezone($request),
                 'pagination' => config('nova.pagination', 'links'),
                 'locale' => config('app.locale', 'en'),
                 'algoliaAppId' => config('services.algolia.appId'),

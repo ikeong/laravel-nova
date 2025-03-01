@@ -2,6 +2,7 @@
 
 namespace Laravel\Nova\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionCollection;
@@ -13,11 +14,8 @@ class LensActionController extends Controller
 {
     /**
      * List the actions for the given resource.
-     *
-     * @param  \Laravel\Nova\Http\Requests\LensRequest  $request
-     * @return \Illuminate\Http\JsonResponse
      */
-    public function index(LensRequest $request)
+    public function index(LensRequest $request): JsonResponse
     {
         $lens = $request->lens();
 
@@ -28,11 +26,12 @@ class LensActionController extends Controller
                 'actions' => $lens->availablePivotActions($request),
             ],
             'counts' => $lens->resolveActions($request)->countsByTypeOnIndex(),
-        ], function ($payload) use ($lens, $request) {
+        ], static function ($payload) use ($lens, $request) {
             $actionCounts = $lens->resolveActions($request)->countsByTypeOnIndex();
             $pivotActionCounts = ActionCollection::make($payload['pivotActions']['actions'])->countsByTypeOnIndex();
 
             $payload['counts'] = [
+                'sole' => $actionCounts['sole'] + $pivotActionCounts['sole'],
                 'standalone' => $actionCounts['standalone'] + $pivotActionCounts['standalone'],
                 'resource' => $actionCounts['resource'] + $pivotActionCounts['resource'],
             ];
@@ -43,11 +42,8 @@ class LensActionController extends Controller
 
     /**
      * Perform an action on the specified resources.
-     *
-     * @param  \Laravel\Nova\Http\Requests\LensActionRequest  $request
-     * @return \Illuminate\Http\Response
      */
-    public function store(LensActionRequest $request)
+    public function store(LensActionRequest $request): mixed
     {
         $request->validateFields();
 
@@ -56,22 +52,17 @@ class LensActionController extends Controller
 
     /**
      * Sync an action field on the specified resources.
-     *
-     * @param  \Laravel\Nova\Http\Requests\LensActionRequest  $request
-     * @return \Illuminate\Http\JsonResponse
      */
-    public function sync(LensActionRequest $request)
+    public function sync(LensActionRequest $request): JsonResponse
     {
         $action = $request->lens()->availableActions($request)
-            ->first(function ($action) use ($request) {
-                return $action->uriKey() === $request->query('action');
-            });
+            ->first(static fn ($action) => $action->uriKey() === $request->query('action'));
 
         abort_unless($action instanceof Action, 404);
 
         return response()->json(
             collect($action->fields($request))
-                ->filter(function ($field) use ($request) {
+                ->filter(static function ($field) use ($request) {
                     return $request->query('field') === $field->attribute &&
                         $request->query('component') === $field->dependentComponentKey();
                 })->each->syncDependsOn($request)

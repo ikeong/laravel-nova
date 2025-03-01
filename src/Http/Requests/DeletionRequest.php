@@ -3,6 +3,7 @@
 namespace Laravel\Nova\Http\Requests;
 
 use Closure;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 
 /**
  * @property-read string|array<int, mixed> $resources
@@ -14,20 +15,18 @@ class DeletionRequest extends NovaRequest
     /**
      * Get the selected models for the action in chunks.
      *
-     * @param  int  $count
-     * @param  \Closure(\Illuminate\Support\Collection):void  $callback
-     * @param  \Closure(\Illuminate\Support\Collection):\Illuminate\Support\Collection  $authCallback
-     * @return mixed
+     * @param  \Closure(\Illuminate\Support\Collection):(void)  $callback
+     * @param  \Closure(\Illuminate\Support\Collection):(\Illuminate\Support\Collection)  $authCallback
      */
-    protected function chunkWithAuthorization($count, Closure $callback, Closure $authCallback)
+    protected function chunkWithAuthorization(int $count, Closure $callback, Closure $authCallback): void
     {
         $model = $this->model();
 
         $this->toSelectedResourceQuery()->when(! $this->allResourcesSelected(), function ($query) {
             $query->whereKey($this->resources);
-        })->tap(function ($query) {
+        })->tap(static function ($query) {
             $query->getQuery()->orders = [];
-        })->chunkById($count, function ($models) use ($callback, $authCallback) {
+        })->chunkById($count, static function ($models) use ($callback, $authCallback) {
             $models = $authCallback($models);
 
             if ($models->isNotEmpty()) {
@@ -38,10 +37,8 @@ class DeletionRequest extends NovaRequest
 
     /**
      * Get the query for the models that were selected by the user.
-     *
-     * @return \Illuminate\Database\Eloquent\Builder
      */
-    protected function toSelectedResourceQuery()
+    protected function toSelectedResourceQuery(): Builder
     {
         if ($this->allResourcesSelected()) {
             return $this->toQuery();

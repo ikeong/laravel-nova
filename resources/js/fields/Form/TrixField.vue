@@ -3,22 +3,22 @@
     :field="currentField"
     :errors="errors"
     :full-width-content="fullWidthContent"
-    :key="index"
+    :key="trixIndex"
     :show-help-text="showHelpText"
   >
     <template #field>
       <div class="rounded-lg" :class="{ disabled: currentlyIsReadonly }">
         <Trix
+          v-bind="extraAttributes"
           name="trixman"
           :value="value"
+          :with-files="currentField.withFiles"
+          :disabled="currentlyIsReadonly"
           @change="handleChange"
           @file-added="handleFileAdded"
           @file-removed="handleFileRemoved"
-          :class="{ 'form-control-bordered-error': hasError }"
-          :with-files="currentField.withFiles"
-          v-bind="currentField.extraAttributes"
-          :disabled="currentlyIsReadonly"
           class="rounded-lg"
+          :class="{ 'form-control-bordered-error': hasError }"
         />
       </div>
     </template>
@@ -41,7 +41,7 @@ export default {
     DependentFormField,
   ],
 
-  data: () => ({ index: 0 }),
+  data: () => ({ trixIndex: 0 }),
 
   mounted() {
     Nova.$on(this.fieldAttributeValueEventName, this.listenToValueChanges)
@@ -51,6 +51,7 @@ export default {
     Nova.$off(this.fieldAttributeValueEventName, this.listenToValueChanges)
 
     this.clearAttachments()
+    this.clearFilesMarkedForRemoval()
   },
 
   methods: {
@@ -74,7 +75,8 @@ export default {
      */
     handleFileAdded({ attachment }) {
       if (attachment.file) {
-        const onCompleted = url => {
+        // Trix provides file if it's an upload
+        const onCompleted = (path, url) => {
           return attachment.setAttributes({
             url: url,
             href: url,
@@ -91,20 +93,35 @@ export default {
           onCompleted,
           onUploadProgress,
         })
+      } else {
+        // fx 'undo' which restores a previous attachment without a file upload
+        this.unflagFileForRemoval(attachment.attachment.attributes.values.url)
       }
     },
 
     handleFileRemoved({ attachment: { attachment } }) {
-      this.removeAttachment(attachment.attributes.values.url)
+      this.flagFileForRemoval(attachment.attributes.values.url)
     },
 
     onSyncedField() {
       this.handleChange(this.currentField.value ?? this.value)
-      this.index++
+      this.trixIndex++
     },
 
     listenToValueChanges(value) {
-      this.index++
+      this.trixIndex++
+    },
+  },
+
+  computed: {
+    extraAttributes() {
+      return {
+        // Leave the default attributes even though we can now specify
+        // whatever attributes we like because the old number field still
+        // uses the old field attributes
+        placeholder: this.placeholder,
+        ...this.currentField.extraAttributes,
+      }
     },
   },
 }

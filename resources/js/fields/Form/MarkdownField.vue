@@ -10,10 +10,12 @@
         ref="theMarkdownEditor"
         v-show="currentlyIsVisible"
         :class="{ 'form-control-bordered-error': hasError }"
-        :id="field.attribute"
+        :attribute="field.attribute"
         :previewer="previewer"
         :uploader="uploader"
         :readonly="currentlyIsReadonly"
+        @file-removed="handleFileRemoved"
+        @file-added="handleFileAdded"
         @initialize="initialize"
         @change="handleChange"
       />
@@ -22,10 +24,10 @@
 </template>
 
 <script>
-import isNil from 'lodash/isNil'
 import {
   DependentFormField,
   HandlesFieldAttachments,
+  HandlesFieldPreviews,
   HandlesValidationErrors,
   mapProps,
 } from '@/mixins'
@@ -34,6 +36,7 @@ export default {
   mixins: [
     HandlesValidationErrors,
     HandlesFieldAttachments,
+    HandlesFieldPreviews,
     DependentFormField,
   ],
 
@@ -41,6 +44,9 @@ export default {
 
   beforeUnmount() {
     Nova.$off(this.fieldAttributeValueEventName, this.listenToValueChanges)
+
+    this.clearAttachments()
+    this.clearFilesMarkedForRemoval()
   },
 
   methods: {
@@ -56,6 +62,14 @@ export default {
       this.fillIfVisible(formData, this.fieldAttribute, this.value || '')
 
       this.fillAttachmentDraftId(formData)
+    },
+
+    handleFileRemoved(url) {
+      this.flagFileForRemoval(url)
+    },
+
+    handleFileAdded(url) {
+      this.unflagFileForRemoval(url)
     },
 
     handleChange(value) {
@@ -84,27 +98,6 @@ export default {
       }
 
       this.handleChange(value)
-    },
-
-    async fetchPreviewContent(value) {
-      Nova.$progress.start()
-
-      const {
-        data: { preview },
-      } = await Nova.request().post(
-        `/nova-api/${this.resourceName}/field/${this.fieldAttribute}/preview`,
-        { value },
-        {
-          params: {
-            editing: true,
-            editMode: isNil(this.resourceId) ? 'create' : 'update',
-          },
-        }
-      )
-
-      Nova.$progress.done()
-
-      return preview
     },
   },
 

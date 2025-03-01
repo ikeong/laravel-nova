@@ -28,9 +28,9 @@ class MultiSelect extends Field implements FilterableField
     /**
      * The field's options callback.
      *
-     * @var array<string|int, array<string, mixed>|string>|\Closure|callable|\Illuminate\Support\Collection|null
+     * @var iterable<string|int, array<string, mixed>|string>|callable|null
      *
-     * @phpstan-var TOption|(callable(): (TOption))|(\Closure(): (TOption))|null
+     * @phpstan-var TOption|(callable(): (TOption))|null
      */
     public $optionsCallback;
 
@@ -44,12 +44,12 @@ class MultiSelect extends Field implements FilterableField
     /**
      * Set the options for the select menu.
      *
-     * @param  array<string|int, array<string, mixed>|string>|\Closure|callable|\Illuminate\Support\Collection  $options
+     * @param  iterable<string|int, array<string, mixed>|string>|callable  $options
      * @return $this
      *
-     * @phpstan-param TOption|(callable(): (TOption))|(\Closure(): (TOption)) $options
+     * @phpstan-param TOption|(callable(): (TOption)) $options
      */
-    public function options($options)
+    public function options(iterable|callable $options)
     {
         $this->optionsCallback = $options;
 
@@ -71,13 +71,10 @@ class MultiSelect extends Field implements FilterableField
     /**
      * Hydrate the given attribute on the model based on the incoming request.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
-     * @param  string  $requestAttribute
      * @param  \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent  $model
-     * @param  string  $attribute
-     * @return mixed
      */
-    protected function fillAttributeFromRequest(NovaRequest $request, $requestAttribute, $model, $attribute)
+    #[\Override]
+    protected function fillAttributeFromRequest(NovaRequest $request, string $requestAttribute, object $model, string $attribute): void
     {
         if ($request->exists($requestAttribute)) {
             $value = $request[$requestAttribute];
@@ -89,7 +86,6 @@ class MultiSelect extends Field implements FilterableField
     /**
      * Make the field filter.
      *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
      * @return \Laravel\Nova\Fields\Filters\Filter
      */
     protected function makeFilter(NovaRequest $request)
@@ -100,30 +96,26 @@ class MultiSelect extends Field implements FilterableField
     /**
      * Define the default filterable callback.
      *
-     * @return callable(\Laravel\Nova\Http\Requests\NovaRequest, \Illuminate\Database\Eloquent\Builder, mixed, string):\Illuminate\Database\Eloquent\Builder
+     * @return callable(\Laravel\Nova\Http\Requests\NovaRequest, \Illuminate\Contracts\Database\Eloquent\Builder, mixed, string):\Illuminate\Contracts\Database\Eloquent\Builder
      */
     protected function defaultFilterableCallback()
     {
-        return function (NovaRequest $request, $query, $value, $attribute) {
+        return static function (NovaRequest $request, $query, $value, $attribute) {
             return $query->whereJsonContains($attribute, $value);
         };
     }
 
     /**
      * Prepare the field for JSON serialization.
-     *
-     * @return array
      */
-    public function serializeForFilter()
+    public function serializeForFilter(): array
     {
-        return transform($this->jsonSerialize(), function ($field) {
-            return Arr::only($field, [
-                'uniqueKey',
-                'name',
-                'attribute',
-                'options',
-            ]);
-        });
+        return transform($this->jsonSerialize(), static fn ($field) => Arr::only($field, [
+            'uniqueKey',
+            'name',
+            'attribute',
+            'options',
+        ]));
     }
 
     /**
@@ -142,7 +134,7 @@ class MultiSelect extends Field implements FilterableField
             $options = $options();
         }
 
-        return collect($options ?? [])->map(function ($label, $value) {
+        return collect($options ?? [])->map(static function ($label, $value) {
             $value = Util::safeInt($value);
 
             return is_array($label) ? $label + ['value' => $value] : ['label' => $label, 'value' => $value];
@@ -154,6 +146,7 @@ class MultiSelect extends Field implements FilterableField
      *
      * @return array<string, mixed>
      */
+    #[\Override]
     public function jsonSerialize(): array
     {
         $this->withMeta([
@@ -161,10 +154,10 @@ class MultiSelect extends Field implements FilterableField
         ]);
 
         if ($this->displayUsingLabel === true) {
-            $this->displayUsing(function ($value) use ($options) {
+            $this->displayUsing(static function ($value) use ($options) {
                 return collect($options)
-                        ->where('value', $value)
-                        ->first()['label'] ?? $value;
+                    ->where('value', $value)
+                    ->first()['label'] ?? $value;
             });
         }
 

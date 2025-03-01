@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Foundation\Http\Middleware\ValidatePostSize;
 use Illuminate\Http\Middleware\CheckResponseForModifications;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
 use Laravel\Nova\Http\Controllers\ActionController;
 use Laravel\Nova\Http\Controllers\AssociatableController;
@@ -69,13 +71,17 @@ Route::get('/styles/{style}', StyleController::class)->middleware(CheckResponseF
 Route::get('/search', SearchController::class);
 
 // Impersonation...
-Route::post('impersonate', [ImpersonateController::class, 'startImpersonating']);
-Route::delete('impersonate', [ImpersonateController::class, 'stopImpersonating']);
+Route::post('impersonate', [ImpersonateController::class, 'startImpersonating'])->name('start-nova-impersonation');
+Route::delete('impersonate', [ImpersonateController::class, 'stopImpersonating'])->name('stop-nova-impersonation');
 
 // Fields...
 Route::get('/{resource}/field/{field}', FieldController::class);
-Route::post('/{resource}/field/{field}/preview', FieldPreviewController::class);
-Route::post('/{resource}/field-attachment/{field}', [FieldAttachmentController::class, 'store']);
+Route::middleware(ValidatePostSize::class)
+    ->group(static function (Router $router) {
+        $router->post('/{resource}/field/{field}/preview', [FieldPreviewController::class, 'create']);
+        $router->post('/{resource}/{resourceId}/field/{field}/preview', [FieldPreviewController::class, 'update']);
+        $router->post('/{resource}/field-attachment/{field}', [FieldAttachmentController::class, 'store']);
+    });
 Route::delete('/{resource}/field-attachment/{field}', [FieldAttachmentController::class, 'destroyAttachment']);
 Route::get('/{resource}/field-attachment/{field}/draftId', [FieldAttachmentController::class, 'draftId']);
 Route::delete('/{resource}/field-attachment/{field}/{draftId}', [FieldAttachmentController::class, 'destroyPending']);
@@ -83,10 +89,15 @@ Route::get('/{resource}/creation-fields', CreationFieldController::class);
 Route::get('/{resource}/{resourceId}/update-fields', UpdateFieldController::class);
 Route::get('/{resource}/{resourceId}/creation-pivot-fields/{relatedResource}', CreationPivotFieldController::class);
 Route::get('/{resource}/{resourceId}/update-pivot-fields/{relatedResource}/{relatedResourceId}', UpdatePivotFieldController::class);
-Route::patch('/{resource}/creation-fields', CreationFieldSyncController::class);
-Route::patch('/{resource}/{resourceId}/update-fields', [UpdateFieldController::class, 'sync']);
-Route::patch('/{resource}/{resourceId}/creation-pivot-fields/{relatedResource}', [CreationPivotFieldController::class, 'sync']);
-Route::patch('/{resource}/{resourceId}/update-pivot-fields/{relatedResource}/{relatedResourceId}', [UpdatePivotFieldController::class, 'sync']);
+Route::middleware(ValidatePostSize::class)
+    ->group(static function (Router $router) {
+        $router->patch('/{resource}/creation-fields', CreationFieldSyncController::class);
+        $router->patch('/{resource}/{resourceId}/update-fields', [UpdateFieldController::class, 'sync']);
+        $router->patch('/{resource}/{resourceId}/creation-pivot-fields/{relatedResource}', [CreationPivotFieldController::class, 'sync']);
+        $router->patch('/{resource}/{resourceId}/update-pivot-fields/{relatedResource}/{relatedResourceId}', [UpdatePivotFieldController::class, 'sync']);
+        $router->post('/{resource}/{resourceId}/field/{field}/preview/{relatedResource}', [FieldPreviewController::class, 'createPivot']);
+        $router->post('/{resource}/{resourceId}/field/{field}/preview/{relatedResource}/{relatedResourceId}', [FieldPreviewController::class, 'updatePivot']);
+    });
 Route::get('/{resource}/{resourceId}/download/{field}', FieldDownloadController::class);
 Route::delete('/{resource}/{resourceId}/field/{field}', FieldDestroyController::class);
 Route::delete('/{resource}/{resourceId}/{relatedResource}/{relatedResourceId}/field/{field}', PivotFieldDestroyController::class);
@@ -94,6 +105,7 @@ Route::delete('/{resource}/{resourceId}/{relatedResource}/{relatedResourceId}/fi
 // Dashboards...
 Route::get('/dashboards/{dashboard}', DashboardController::class);
 Route::get('/dashboards/cards/{dashboard}', DashboardCardController::class);
+Route::get('/dashboards/cards/{dashboard}/metrics/{metric}', DashboardMetricController::class);
 
 // Notifications...
 Route::get('/nova-notifications', NotificationIndexController::class);
@@ -105,7 +117,7 @@ Route::delete('/nova-notifications/{notification}', NotificationDeleteController
 
 // Actions...
 Route::get('/{resource}/actions', [ActionController::class, 'index']);
-Route::post('/{resource}/action', [ActionController::class, 'store']);
+Route::post('/{resource}/action', [ActionController::class, 'store'])->middleware(ValidatePostSize::class);
 Route::patch('/{resource}/action', [ActionController::class, 'sync']);
 
 // Filters...
@@ -119,12 +131,11 @@ Route::delete('/{resource}/lens/{lens}', LensResourceDestroyController::class);
 Route::delete('/{resource}/lens/{lens}/force', LensResourceForceDeleteController::class);
 Route::put('/{resource}/lens/{lens}/restore', LensResourceRestoreController::class);
 Route::get('/{resource}/lens/{lens}/actions', [LensActionController::class, 'index']);
-Route::post('/{resource}/lens/{lens}/action', [LensActionController::class, 'store']);
+Route::post('/{resource}/lens/{lens}/action', [LensActionController::class, 'store'])->middleware(ValidatePostSize::class);
 Route::patch('/{resource}/lens/{lens}/action', [LensActionController::class, 'sync']);
 Route::get('/{resource}/lens/{lens}/filters', [LensFilterController::class, 'index']);
 
 // Cards / Metrics...
-Route::get('/metrics/{metric}', DashboardMetricController::class);
 Route::get('/{resource}/metrics', [MetricController::class, 'index']);
 Route::get('/{resource}/metrics/{metric}', [MetricController::class, 'show']);
 Route::get('/{resource}/{resourceId}/metrics/{metric}', DetailMetricController::class);
@@ -151,16 +162,23 @@ Route::delete('/{resource}/force', ResourceForceDeleteController::class);
 Route::get('/{resource}/{resourceId}', ResourceShowController::class);
 Route::get('/{resource}/{resourceId}/preview', ResourcePreviewController::class);
 Route::get('/{resource}/{resourceId}/peek', ResourcePeekController::class);
-Route::post('/{resource}', ResourceStoreController::class);
-Route::put('/{resource}/{resourceId}', ResourceUpdateController::class);
+Route::middleware(ValidatePostSize::class)
+    ->group(static function (Router $router) {
+        $router->post('/{resource}', ResourceStoreController::class);
+        $router->put('/{resource}/{resourceId}', ResourceUpdateController::class);
+    });
 Route::delete('/{resource}', ResourceDestroyController::class);
 
 // Associatable Resources...
 Route::get('/{resource}/associatable/{field}', AssociatableController::class);
+Route::get('/{resource}/attachable/{field}', AttachableController::class);
 Route::get('/{resource}/{resourceId}/attachable/{field}', AttachableController::class);
 Route::get('/{resource}/morphable/{field}', MorphableController::class);
 
 // Resource Attachment...
-Route::post('/{resource}/{resourceId}/attach/{relatedResource}', ResourceAttachController::class);
-Route::post('/{resource}/{resourceId}/update-attached/{relatedResource}/{relatedResourceId}', AttachedResourceUpdateController::class);
-Route::post('/{resource}/{resourceId}/attach-morphed/{relatedResource}', MorphedResourceAttachController::class);
+Route::middleware(ValidatePostSize::class)
+    ->group(static function (Router $router) {
+        $router->post('/{resource}/{resourceId}/attach/{relatedResource}', ResourceAttachController::class);
+        $router->post('/{resource}/{resourceId}/update-attached/{relatedResource}/{relatedResourceId}', AttachedResourceUpdateController::class);
+        $router->post('/{resource}/{resourceId}/attach-morphed/{relatedResource}', MorphedResourceAttachController::class);
+    });

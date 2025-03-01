@@ -4,8 +4,8 @@
       <!-- Search -->
       <div class="relative z-10" ref="searchInput">
         <Icon
-          type="search"
-          width="20"
+          name="magnifying-glass"
+          type="mini"
           class="absolute ml-2 text-gray-400"
           :style="{ top: '4px' }"
         />
@@ -140,11 +140,9 @@
 
 <script>
 import { createPopper } from '@popperjs/core'
-import { CancelToken, Cancel } from 'axios'
-import map from 'lodash/map'
+import { CancelToken, isCancel } from 'axios'
+import { Icon } from 'laravel-nova-ui'
 import debounce from 'lodash/debounce'
-import filter from 'lodash/filter'
-import find from 'lodash/find'
 import uniqBy from 'lodash/uniqBy'
 
 function fetchSearchResults(search, cancelCallback) {
@@ -155,6 +153,10 @@ function fetchSearchResults(search, cancelCallback) {
 }
 
 export default {
+  components: {
+    Icon,
+  },
+
   data: () => ({
     searchFunction: null,
     canceller: null,
@@ -224,7 +226,7 @@ export default {
         this.results = results
         this.loading = false
       } catch (e) {
-        if (e instanceof Cancel) {
+        if (isCancel(e)) {
           return
         }
 
@@ -315,8 +317,7 @@ export default {
       if (event.isComposing || event.keyCode === 229) return
 
       if (this.searchTerm !== '') {
-        const resource = find(
-          this.indexedResults,
+        const resource = this.indexedResults.find(
           res => res.index === this.selected
         )
 
@@ -328,6 +329,10 @@ export default {
       if (this.canceller !== null) this.canceller()
 
       this.closeSearch()
+
+      if (resource == null) {
+        return
+      }
 
       let url = Nova.url(
         `/resources/${resource.resourceName}/${resource.resourceId}`
@@ -345,12 +350,12 @@ export default {
 
   computed: {
     indexedResults() {
-      return map(this.results, (item, index) => ({ index, ...item }))
+      return this.results.map((item, index) => ({ index, ...item }))
     },
 
     formattedGroups() {
       return uniqBy(
-        map(this.indexedResults, item => ({
+        this.indexedResults.map(item => ({
           resourceName: item.resourceName,
           resourceTitle: item.resourceTitle,
         })),
@@ -359,11 +364,10 @@ export default {
     },
 
     formattedResults() {
-      return map(this.formattedGroups, group => ({
+      return this.formattedGroups.map(group => ({
         resourceName: group.resourceName,
         resourceTitle: group.resourceTitle,
-        items: filter(
-          this.indexedResults,
+        items: this.indexedResults.filter(
           item => item.resourceName === group.resourceName
         ),
       }))

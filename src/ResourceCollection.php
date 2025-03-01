@@ -16,27 +16,27 @@ class ResourceCollection extends Collection
     /**
      * Return the authorized resources of the collection.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return static<TKey, TValue>
      */
     public function authorized(Request $request)
     {
-        return $this->filter(function ($resource) use ($request) {
-            return $resource::authorizedToViewAny($request);
-        });
+        /** @phpstan-ignore return.type */
+        return $this->filter(
+            static fn ($resource) => $resource::authorizedToViewAny($request)
+        );
     }
 
     /**
      * Return the resources available to be displayed in the navigation.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return static<TKey, TValue>
      */
     public function availableForNavigation(Request $request)
     {
-        return $this->filter(function ($resource) use ($request) {
-            return $resource::availableForNavigation($request);
-        });
+        /** @phpstan-ignore return.type */
+        return $this->filter(
+            static fn ($resource) => $resource::availableForNavigation($request)
+        );
     }
 
     /**
@@ -46,9 +46,10 @@ class ResourceCollection extends Collection
      */
     public function searchable()
     {
-        return $this->filter(function ($resource) {
-            return $resource::$globallySearchable;
-        });
+        /** @phpstan-ignore return.type */
+        return $this->filter(
+            static fn ($resource) => $resource::$globallySearchable
+        );
     }
 
     /**
@@ -58,15 +59,15 @@ class ResourceCollection extends Collection
      */
     public function grouped()
     {
-        return $this->groupBy(function ($resource, $key) {
-            return (string) $resource::group();
-        })->toBase()->sortKeys();
+        /** @phpstan-ignore return.type */
+        return $this->groupBy(
+            static fn ($resource, $key) => (string) $resource::group()
+        )->toBase()->sortKeys();
     }
 
     /**
      * Group the resources for display in navigation.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Support\Collection<string, \Laravel\Nova\ResourceCollection<array-key, TValue>>
      */
     public function groupedForNavigation(Request $request)

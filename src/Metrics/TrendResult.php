@@ -3,7 +3,11 @@
 namespace Laravel\Nova\Metrics;
 
 use JsonSerializable;
+use Stringable;
 
+/**
+ * @phpstan-import-type TNumbroFormat from \Laravel\Nova\Metrics\ValueResult
+ */
 class TrendResult implements JsonSerializable
 {
     use TransformsResults;
@@ -110,10 +114,9 @@ class TrendResult implements JsonSerializable
     /**
      * Indicate that the metric represents a dollar value.
      *
-     * @param  string  $symbol
      * @return $this
      */
-    public function dollars($symbol = '$')
+    public function dollars(Stringable|string $symbol = '$')
     {
         return $this->prefix($symbol);
     }
@@ -121,10 +124,9 @@ class TrendResult implements JsonSerializable
     /**
      * Indicate that the metric represents a euro value.
      *
-     * @param  string  $symbol
      * @return $this
      */
-    public function euros($symbol = '€')
+    public function euros(Stringable|string $symbol = '€')
     {
         return $this->prefix($symbol);
     }
@@ -132,10 +134,9 @@ class TrendResult implements JsonSerializable
     /**
      * Set the metric value prefix.
      *
-     * @param  string  $prefix
      * @return $this
      */
-    public function prefix($prefix)
+    public function prefix(Stringable|string $prefix)
     {
         $this->prefix = $prefix;
 
@@ -145,10 +146,9 @@ class TrendResult implements JsonSerializable
     /**
      * Set the metric value suffix.
      *
-     * @param  string  $suffix
      * @return $this
      */
-    public function suffix($suffix)
+    public function suffix(Stringable|string $suffix)
     {
         $this->suffix = $suffix;
 
@@ -170,10 +170,12 @@ class TrendResult implements JsonSerializable
     /**
      * Set the metric value formatting.
      *
-     * @param  string  $format
+     * @param  array<string, mixed>|string  $format
      * @return $this
+     *
+     * @phpstan-param TNumbroFormat|string  $format
      */
-    public function format($format)
+    public function format(array|string $format)
     {
         $this->format = $format;
 
